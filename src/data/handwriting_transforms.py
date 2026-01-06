@@ -1,5 +1,5 @@
 import torchvision.transforms as T
-from core.config import *
+from ..core.config import *
 
 class HandwritingTransform:
     """

@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from core.config import TRAIN_DIR, TRAIN_LABELS_FILE, BATCH_SIZE, NUM_WORKERS
+from ..core.config import TRAIN_DIR, TRAIN_LABELS_FILE, BATCH_SIZE, NUM_WORKERS
 from .collate import collate_fn
 from .handwriting_dataset import HandwritingDataset
 from .handwriting_transforms import HandwritingTransform

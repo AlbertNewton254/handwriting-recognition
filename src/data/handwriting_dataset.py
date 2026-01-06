@@ -3,7 +3,7 @@ import warnings
 import pandas as pd
 from PIL import Image
 from torch.utils.data import Dataset
-from core.config import *
+from ..core.config import *
 
 class HandwritingDataset(Dataset):
     """
