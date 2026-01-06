@@ -345,6 +345,7 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
 
     return test_loss, test_cer
 
+
 def generate_text_from_image(model, test_dir, test_labels, index, device='cuda'):
     """
     Generate text prediction from a single image tensor using the trained model
