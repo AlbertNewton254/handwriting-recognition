@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from core.config import IMAGE_HEIGHT, IMAGE_WIDTH, get_num_classes
+from ..core.config import IMAGE_HEIGHT, IMAGE_WIDTH, get_num_classes
 
 class HandwritingRecognitionModel(nn.Module):
     """
