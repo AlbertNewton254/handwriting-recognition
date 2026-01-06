@@ -2,10 +2,76 @@ import os
 import torch
 import argparse
 import glob
-from src.core.config import TEST_DIR, TEST_LABELS_FILE
-from src.core.utils import generate_text_from_image
+from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
+from src.core.utils import decode_predictions
 from src.models.handwriting_recognition_model import HandwritingRecognitionModel
 from src.data.handwriting_dataloader import get_handwriting_dataloader
+
+
+def generate_from_model(test_dir, test_labels, checkpoint_path, index, device='cuda'):
+    """
+    Generate text prediction from a single image using a trained model
+
+    test_dir: Directory containing test images
+    test_labels: Path to test labels CSV file
+    checkpoint_path: Path to model checkpoint file to load
+    index: Index of the image in the dataset
+    device: Device to run inference on ('cuda' or 'cpu')
+
+    predicted_text: The predicted text string
+    ground_truth_text: The ground truth text string (or None if unavailable)
+    """
+    # Create test dataloader without augmentation transforms
+    test_loader = get_handwriting_dataloader(test_dir, test_labels, batch_size=1, shuffle=False, num_workers=0, with_transform=False)
+
+    # Initialize model with correct num_classes
+    model = HandwritingRecognitionModel(num_classes=test_loader.dataset.num_classes).to(device)
+
+    # Load checkpoint
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+
+    # Handle different checkpoint formats
+    if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+        state_dict = checkpoint['model_state_dict']
+        epoch_info = f" (Epoch {checkpoint.get('epoch', 'N/A')})"
+    else:
+        state_dict = checkpoint
+        epoch_info = ""
+
+    # Strip _orig_mod. prefix from compiled model if present
+    state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
+    model.load_state_dict(state_dict)
+
+    # Set model to evaluation mode
+    model.eval()
+
+    # Get image from dataset
+    image_tensor, _ = test_loader.dataset[index]
+    image_tensor = image_tensor.unsqueeze(0).to(device, non_blocking=True)
+
+    # Generate prediction
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        # Use decode_predictions to decode the output
+        predicted_texts = decode_predictions(outputs, CHARACTER_SET)
+        predicted_text = predicted_texts[0]
+
+    # Get ground truth if available
+    ground_truth_text = None
+    try:
+        _, ground_truth_indices = test_loader.dataset[index]
+        ground_truth_text = ''.join([CHARACTER_SET[idx - 1] for idx in ground_truth_indices])
+    except Exception:
+        pass
+
+    print(f"\nGeneration Results{epoch_info}:")
+    print(f"Image index: {index}")
+    print(f"Predicted text: {predicted_text}")
+    if ground_truth_text:
+        print(f"Ground truth:   {ground_truth_text}")
+
+    return predicted_text, ground_truth_text
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate text prediction from a handwritten image")
@@ -36,43 +102,12 @@ if __name__ == "__main__":
 
     print(f"Using checkpoint: {checkpoint_path}")
 
-    # Load the model
-    test_loader = get_handwriting_dataloader(args.test_dir, args.test_labels, batch_size=1, shuffle=False, num_workers=0, with_transform=False)
-    model = HandwritingRecognitionModel(num_classes=test_loader.dataset.num_classes).to(device)
-
-    # Load checkpoint
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-
-    # Handle different checkpoint formats
-    if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-        state_dict = checkpoint['model_state_dict']
-        epoch_info = f" (Epoch {checkpoint.get('epoch', 'N/A')})"
-    else:
-        state_dict = checkpoint
-        epoch_info = ""
-
-    # Strip _orig_mod. prefix from compiled model if present
-    state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
-    model.load_state_dict(state_dict)
-
-    print(f"Model loaded successfully{epoch_info}")
-
     # Generate text from image
     print(f"\nGenerating text for image at index {args.index}...")
-    predicted_text = generate_text_from_image(
-        model=model,
+    generate_from_model(
         test_dir=args.test_dir,
         test_labels=args.test_labels,
+        checkpoint_path=checkpoint_path,
         index=args.index,
         device=device
     )
-
-    print(f"\nPredicted text: {predicted_text}")
-
-    # Optionally show the ground truth if available
-    try:
-        _, ground_truth = test_loader.dataset[args.index]
-        ground_truth_text = ''.join([test_loader.dataset.idx2char[idx] for idx in ground_truth])
-        print(f"Ground truth:   {ground_truth_text}")
-    except Exception as e:
-        print(f"Could not retrieve ground truth: {e}")
