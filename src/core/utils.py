@@ -172,12 +172,11 @@ def evaluate(model, dataloader, criterion, device):
         all_predictions.extend(predictions)
 
         # Decode ground truths
-        batch_offset = 0
-        for length in label_lengths:
-            label_indices = labels[batch_offset:batch_offset + length].cpu().numpy()
-            ground_truth = ''.join([CHARACTER_SET[i - 1] for i in label_indices])
+        for i, length in enumerate(label_lengths):
+            length = length.item()  # Convert tensor to int
+            label_indices = labels[i, :length].cpu().tolist()
+            ground_truth = ''.join([CHARACTER_SET[idx - 1] for idx in label_indices])
             all_ground_truths.append(ground_truth)
-            batch_offset += length
 
     avg_loss = total_loss / len(dataloader)
     avg_cer = calculate_cer(all_predictions, all_ground_truths)
