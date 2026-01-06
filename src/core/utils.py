@@ -4,10 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from .config import CHARACTER_SET, MODEL_CHECKPOINTS_DIR, MODEL_CHECKPOINT
-from data.handwriting_dataloader import get_handwriting_dataloader
+from ..data.handwriting_dataloader import get_handwriting_dataloader
 from PIL import Image
-from data.handwriting_transforms import HandwritingTransform
-from models.handwriting_recognition_model import HandwritingRecognitionModel
+from ..data.handwriting_transforms import HandwritingTransform
+from ..models.handwriting_recognition_model import HandwritingRecognitionModel
 
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, accumulation_steps):
