@@ -1,0 +1,9 @@
+# Data directory (loaded files) and runs files at root
+/data/
+/runs/
+
+# Python cache files
+__pycache__/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
