@@ -1,6 +1,6 @@
 import torch
-from core.config import *
-from core.utils import train_model
+from src.core.config import *
+from src.core.utils import train_model
 
 if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -2,8 +2,8 @@ import os
 import torch
 import argparse
 import glob
-from core.config import *
-from core.utils import test_model
+from src.core.config import *
+from src.core.utils import test_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

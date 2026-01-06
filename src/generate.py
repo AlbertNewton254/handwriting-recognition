@@ -2,10 +2,10 @@ import os
 import torch
 import argparse
 import glob
-from core.config import TEST_DIR, TEST_LABELS_FILE
-from core.utils import generate_text_from_image
-from models.handwriting_recognition_model import HandwritingRecognitionModel
-from data.handwriting_dataloader import get_handwriting_dataloader
+from src.core.config import TEST_DIR, TEST_LABELS_FILE
+from src.core.utils import generate_text_from_image
+from src.models.handwriting_recognition_model import HandwritingRecognitionModel
+from src.data.handwriting_dataloader import get_handwriting_dataloader
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate text prediction from a handwritten image")
