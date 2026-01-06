@@ -45,12 +45,13 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
 
     # Evaluate on test set
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    test_loss = evaluate(model, test_loader, criterion=criterion, device=device)
+    test_loss, test_cer = evaluate(model, test_loader, criterion=criterion, device=device)
 
     print(f"\nTest Results{epoch_info}:")
     print(f"Test Loss: {test_loss:.4f}")
+    print(f"Test CER: {test_cer:.2f}%")
 
-    return test_loss
+    return test_loss, test_cer
 
 
 if __name__ == "__main__":
