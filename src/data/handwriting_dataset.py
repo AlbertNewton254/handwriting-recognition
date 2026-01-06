@@ -28,7 +28,11 @@ class HandwritingDataset(Dataset):
         self.num_classes = len(self.char2idx) + 1
 
         # Cache the sorted list of image files (only list directory once!)
-        self.image_files = sorted(os.listdir(self.images_dir))
+        # Sort naturally to match CSV ordering (numeric not lexicographic)
+        import re
+        def natural_sort_key(s):
+            return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+        self.image_files = sorted(os.listdir(self.images_dir), key=natural_sort_key)
 
         # Create O(1) lookup dictionary for labels instead of O(n) DataFrame filtering
         self.labels_dict = dict(zip(labels_df['FILENAME'], labels_df['IDENTITY']))
