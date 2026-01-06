@@ -35,7 +35,7 @@ handwriting-recognition/
 │   ├── train.csv                   # Training labels
 │   ├── validation.csv              # Validation labels
 │   └── test.csv                    # Test labels
-├── model/                          # Model checkpoints directory
+├── runs/                          # Model checkpoints directory
 │   └── run_*_checkpoints/          # Timestamped checkpoint directories
 ├── src/                            # Source code
 │   ├── core/                       # Core utilities
