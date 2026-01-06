@@ -3,11 +3,90 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from .config import CHARACTER_SET, MODEL_CHECKPOINTS_DIR, MODEL_CHECKPOINT
 from ..data.handwriting_dataloader import get_handwriting_dataloader
-from PIL import Image
-from ..data.handwriting_transforms import HandwritingTransform
 from ..models.handwriting_recognition_model import HandwritingRecognitionModel
+
+
+def levenshtein_distance(s1, s2):
+    """
+    Calculate the Levenshtein distance between two strings
+
+    s1: First string
+    s2: Second string
+
+    distance: The minimum number of single-character edits required
+    """
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            # Cost of insertions, deletions, or substitutions
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def calculate_cer(predictions, ground_truths):
+    """
+    Calculate Character Error Rate (CER) for a batch of predictions
+
+    predictions: List of predicted text strings
+    ground_truths: List of ground truth text strings
+
+    cer: Character Error Rate as a percentage
+    """
+    total_distance = 0
+    total_length = 0
+
+    for pred, truth in zip(predictions, ground_truths):
+        distance = levenshtein_distance(pred, truth)
+        total_distance += distance
+        total_length += len(truth)
+
+    if total_length == 0:
+        return 0.0
+
+    return (total_distance / total_length) * 100
+
+
+def decode_predictions(outputs, char_set):
+    """
+    Decode CTC outputs to text strings
+
+    outputs: Model outputs of shape (N, T, C)
+    char_set: Character set for decoding
+
+    decoded_texts: List of decoded text strings
+    """
+    decoded_texts = []
+    predicted_indices = torch.argmax(outputs, dim=2)
+
+    for sequence in predicted_indices:
+        # Collapse repeated characters and remove blanks (index 0)
+        collapsed_indices = []
+        previous_index = -1
+        for idx in sequence.cpu().numpy():
+            if idx != previous_index and idx != 0:
+                collapsed_indices.append(idx)
+            previous_index = idx
+
+        # Convert indices to characters
+        text = ''.join([char_set[i - 1] for i in collapsed_indices])
+        decoded_texts.append(text)
+
+    return decoded_texts
 
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, accumulation_steps):
@@ -67,9 +146,12 @@ def evaluate(model, dataloader, criterion, device):
     device: Device to evaluate on ('cuda' or 'cpu')
 
     avg_loss: Average evaluation loss
+    avg_cer: Average Character Error Rate
     """
     model.eval()
     total_loss = 0.0
+    all_predictions = []
+    all_ground_truths = []
 
     for images, labels, label_lengths in dataloader:
         # Use non_blocking for async GPU transfer
@@ -85,7 +167,22 @@ def evaluate(model, dataloader, criterion, device):
         loss = criterion(outputs_permuted, labels, input_lengths, label_lengths)
         total_loss += loss.item()
 
-    return total_loss / len(dataloader)
+        # Decode predictions
+        predictions = decode_predictions(outputs, CHARACTER_SET)
+        all_predictions.extend(predictions)
+
+        # Decode ground truths
+        batch_offset = 0
+        for length in label_lengths:
+            label_indices = labels[batch_offset:batch_offset + length].cpu().numpy()
+            ground_truth = ''.join([CHARACTER_SET[i - 1] for i in label_indices])
+            all_ground_truths.append(ground_truth)
+            batch_offset += length
+
+    avg_loss = total_loss / len(dataloader)
+    avg_cer = calculate_cer(all_predictions, all_ground_truths)
+
+    return avg_loss, avg_cer
 
 
 def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, batch_size=32, accumulation_steps=4, learning_rate=0.001, device='cuda', num_workers=4):
@@ -121,13 +218,30 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     best_val_loss = float('inf')
+
+    # Track metrics for plotting
+    train_losses = []
+    val_losses = []
+    val_cers = []
+    epochs_list = []
+
     pbar = tqdm(range(1, num_epochs + 1), desc="Training Progress")
 
     for epoch in pbar:
         train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device, accumulation_steps)
-        val_loss = evaluate(model, val_dataloader, criterion, device)
+        val_loss, val_cer = evaluate(model, val_dataloader, criterion, device)
 
-        pbar.set_postfix({'Epoch': epoch, 'Train Loss': f"{train_loss:.4f}", 'Val Loss': f"{val_loss:.4f}"})
+        # Store metrics
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        val_cers.append(val_cer)
+        epochs_list.append(epoch)
+
+        pbar.set_postfix({'Epoch': epoch, 'Train Loss': f"{train_loss:.4f}", 'Val Loss': f"{val_loss:.4f}", 'Val CER': f"{val_cer:.2f}%"})
+
+        # Print CER every 5 epochs for more visibility
+        if epoch % 5 == 0:
+            print(f"\nEpoch {epoch} - Val CER: {val_cer:.2f}%")
 
         # At each 5 epochs, save a checkpoint
         if epoch % 5 == 0:
@@ -152,6 +266,37 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
                 'val_loss': val_loss,
             }, best_model_path)
             print(f"\nBest model saved to {best_model_path} (Epoch: {epoch}, Val Loss: {val_loss:.4f})")
+
+    # Create plots directory
+    plots_dir = os.path.join(MODEL_CHECKPOINTS_DIR, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+
+    # Generate loss plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs_list, train_losses, label='Train Loss', marker='o', markersize=3)
+    plt.plot(epochs_list, val_losses, label='Val Loss', marker='s', markersize=3)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    loss_plot_path = os.path.join(plots_dir, "loss_plot.png")
+    plt.savefig(loss_plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Loss plot saved to {loss_plot_path}")
+
+    # Generate CER plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs_list, val_cers, label='Val CER', marker='o', markersize=3, color='green')
+    plt.xlabel('Epoch')
+    plt.ylabel('CER (%)')
+    plt.title('Validation Character Error Rate')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    cer_plot_path = os.path.join(plots_dir, "cer_plot.png")
+    plt.savefig(cer_plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"CER plot saved to {cer_plot_path}")
 
     print(f"\nTraining complete. Checkpoints saved in {MODEL_CHECKPOINTS_DIR}")
 
@@ -190,21 +335,24 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
     state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
 
-    # Evaluate on test set
+    # Evaluate on test set with CER calculation
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    test_loss = evaluate(model, test_loader, criterion=criterion, device=device)
+    test_loss, test_cer = evaluate(model, test_loader, criterion=criterion, device=device)
 
     print(f"\nTest Results{epoch_info}:")
     print(f"Test Loss: {test_loss:.4f}")
+    print(f"Test CER: {test_cer:.2f}%")
 
-    return test_loss
+    return test_loss, test_cer
 
 def generate_text_from_image(model, test_dir, test_labels, index, device='cuda'):
     """
     Generate text prediction from a single image tensor using the trained model
 
     model: The trained handwriting recognition model
-    image_tensor: Preprocessed image tensor of shape (1, C, H, W)
+    test_dir: Directory containing test images
+    test_labels: Path to test labels CSV file
+    index: Index of the image in the dataset
     device: Device to run inference on ('cuda' or 'cpu')
 
     predicted_text: The predicted text string
@@ -216,20 +364,10 @@ def generate_text_from_image(model, test_dir, test_labels, index, device='cuda')
     image_tensor, _ = test_loader.dataset[index]
     image_tensor = image_tensor.unsqueeze(0).to(device, non_blocking=True)
 
-    predicted_text = ""
     with torch.no_grad():
         outputs = model(image_tensor)
-        # Get the predicted indices
-        predicted_indices = torch.argmax(outputs, dim=2)
-        # Collapse repeated characters and remove blanks (assumed to be index 0)
-        predicted_indices = predicted_indices.squeeze(0).cpu().numpy()
-        collapsed_indices = []
-        previous_index = -1
-        for index in predicted_indices:
-            if index != previous_index and index != 0:
-                collapsed_indices.append(index)
-            previous_index = index
-        # Convert indices to characters
-        predicted_text = ''.join([CHARACTER_SET[i - 1] for i in collapsed_indices])  # -1 for zero-based indexing
+        # Use decode_predictions to decode the output
+        predicted_texts = decode_predictions(outputs, CHARACTER_SET)
+        predicted_text = predicted_texts[0]
 
     return predicted_text
