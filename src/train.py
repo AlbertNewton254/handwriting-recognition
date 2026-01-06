@@ -46,7 +46,7 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
 
     for epoch in pbar:
         train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device, accumulation_steps)
-        val_loss = evaluate(model, val_dataloader, criterion, device)
+        val_loss, _ = evaluate(model, val_dataloader, criterion, device)
 
         pbar.set_postfix({'Epoch': epoch, 'Train Loss': f"{train_loss:.4f}", 'Val Loss': f"{val_loss:.4f}"})
 
