@@ -4,9 +4,6 @@ Provides unified interface for training, testing, and generating predictions.
 """
 
 import argparse
-import sys
-import os
-import glob
 import torch
 from src.core.config import (
     TRAIN_DIR, TRAIN_LABELS_FILE,
@@ -14,9 +11,11 @@ from src.core.config import (
     TEST_DIR, TEST_LABELS_FILE,
     EPOCHS, BATCH_SIZE, LEARNING_RATE, ACCUMULATION_STEPS, NUM_WORKERS
 )
+from src.core.utils import find_latest_checkpoint
 from src.train import train_model
 from src.test import test_model
 from src.generate import generate_from_model
+from src.analyze import analyze_predictions
 
 
 def train_command(args):
@@ -43,21 +42,8 @@ def test_command(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
-    # Find checkpoint if not provided
-    if args.checkpoint:
-        checkpoint_path = args.checkpoint
-    else:
-        # Find all checkpoint directories
-        dirs = glob.glob("./runs/run_*_checkpoints")
-        if not dirs:
-            print("Error: No checkpoint directories found in ./runs/")
-            sys.exit(1)
-
-        # Sort by timestamp in folder name (most recent first)
-        dirs.sort(reverse=True)
-        most_recent_dir = dirs[0]
-        checkpoint_path = os.path.join(most_recent_dir, "best_model.pth")
-
+    # Find checkpoint
+    checkpoint_path = find_latest_checkpoint(args.checkpoint)
     print(f"Using checkpoint: {checkpoint_path}")
 
     test_model(
@@ -75,21 +61,8 @@ def generate_command(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
-    # Find checkpoint if not provided
-    if args.checkpoint:
-        checkpoint_path = args.checkpoint
-    else:
-        # Find all checkpoint directories
-        dirs = glob.glob("./runs/run_*_checkpoints")
-        if not dirs:
-            print("Error: No checkpoint directories found in ./runs/")
-            sys.exit(1)
-
-        # Sort by timestamp in folder name (most recent first)
-        dirs.sort(reverse=True)
-        most_recent_dir = dirs[0]
-        checkpoint_path = os.path.join(most_recent_dir, "best_model.pth")
-
+    # Find checkpoint
+    checkpoint_path = find_latest_checkpoint(args.checkpoint)
     print(f"Using checkpoint: {checkpoint_path}")
 
     # Generate text from image
@@ -100,6 +73,19 @@ def generate_command(args):
         checkpoint_path=checkpoint_path,
         index=args.index,
         device=device
+    )
+
+
+def analyze_command(args):
+    """Execute analysis command"""
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    analyze_predictions(
+        num_samples=args.num_samples,
+        device=device,
+        checkpoint=args.checkpoint,
+        test_dir=args.test_dir,
+        test_labels=args.test_labels
     )
 
 
@@ -118,6 +104,9 @@ Examples:
 
   # Generate prediction for a single image
   python main.py generate --index 100
+
+  # Analyze predictions on random test samples
+  python main.py analyze --num-samples 100
         """
     )
 
@@ -171,6 +160,18 @@ Examples:
     generate_parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE,
                                 help=f'Path to test labels CSV (default: {TEST_LABELS_FILE})')
     generate_parser.set_defaults(func=generate_command)
+
+    # Analyze subcommand
+    analyze_parser = subparsers.add_parser('analyze', help='Analyze predictions on random test samples')
+    analyze_parser.add_argument('--num-samples', '-n', type=int, default=100,
+                               help='Number of random samples to analyze (default: 100)')
+    analyze_parser.add_argument('--checkpoint', '-c', type=str,
+                               help='Path to checkpoint file (uses most recent if not specified)')
+    analyze_parser.add_argument('--test-dir', type=str, default=TEST_DIR,
+                               help=f'Directory containing test images (default: {TEST_DIR})')
+    analyze_parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE,
+                               help=f'Path to test labels CSV (default: {TEST_LABELS_FILE})')
+    analyze_parser.set_defaults(func=analyze_command)
 
     args = parser.parse_args()
     args.func(args)
