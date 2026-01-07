@@ -1,5 +1,6 @@
 import torch
 from .config import CHARACTER_SET
+from ..data.handwriting_dataloader import get_handwriting_dataloader
 
 
 def levenshtein_distance(s1, s2):
