@@ -63,7 +63,7 @@ def generate_from_model(test_dir, test_labels, checkpoint_path, index, device='c
 
 
 if __name__ == "__main__":
-    from src.core.utils import get_device
+    from src.core.device import get_device
     parser = argparse.ArgumentParser(description="Generate text prediction from a handwritten image")
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     parser.add_argument('--index', '-i', type=int, required=True, help='Index of the image in the test dataset')

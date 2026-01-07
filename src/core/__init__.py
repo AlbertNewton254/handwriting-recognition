@@ -15,7 +15,7 @@ This package contains core functionality organized by responsibility:
 from .config import *
 from .checkpoints import find_latest_checkpoint, load_model_checkpoint
 from .decoding import decode_predictions, decode_ground_truth
+from .device import get_device
 from .evaluation import evaluate
 from .metrics import calculate_cer, calculate_metrics
 from .training import train_one_epoch
-from .utils import get_device
