@@ -36,21 +36,28 @@ handwriting-recognition/
 │   ├── validation.csv              # Validation labels
 │   └── test.csv                    # Test labels
 ├── runs/                          # Model checkpoints directory
-│   └── run_*_checkpoints/          # Timestamped checkpoint directories
+│   └── run_YYYYMMDD_HHMMSS_checkpoints/  # Timestamped checkpoint directories
+│       ├── best_model.pth         # Best model checkpoint
+│       ├── epoch_*.pth            # Epoch-specific checkpoints
+│       └── plots/                 # Training plots
 ├── src/                            # Source code
 │   ├── core/                       # Core utilities
+│   │   ├── __init__.py
 │   │   ├── config.py              # Configuration parameters
 │   │   └── utils.py               # Training and testing utilities
 │   ├── data/                       # Data loading and processing
+│   │   ├── __init__.py
 │   │   ├── handwriting_dataset.py # PyTorch Dataset implementation
 │   │   ├── handwriting_dataloader.py # DataLoader utilities
 │   │   ├── handwriting_transforms.py # Image transformations
 │   │   └── collate.py             # Custom collate function
 │   ├── models/                     # Model architectures
-│   │   └── handwriting_recognition_model.py # Main model
+│   │   ├── __init__.py
+│   │   └── handwriting_recognition_model.py # CRNN model
 │   ├── train.py                   # Training script
 │   ├── test.py                    # Testing script
 │   └── generate.py                # Text generation script
+├── main.py                         # Unified command-line interface
 ├── setup.sh                        # Dataset setup script
 ├── README.md                       # This file
 ├── QUICKSTART.md                   # Quick start guide
@@ -78,18 +85,24 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed installation instructions.
 bash setup.sh
 ```
 
-2. **Train the model**:
+2. **Train the model** (using main.py or train.py directly):
 ```bash
+python main.py train
+# or
 python ./src/train.py
 ```
 
 3. **Test the model**:
 ```bash
+python main.py test
+# or
 python ./src/test.py
 ```
 
 4. **Generate predictions from individual images**:
 ```bash
+python main.py generate --index 0
+# or
 python ./src/generate.py --index 0
 ```
 
@@ -139,6 +152,8 @@ The testing script:
 To generate text predictions from individual images:
 
 ```bash
+python main.py generate --index 0
+# or
 python ./src/generate.py --index 0
 ```
 
@@ -159,17 +174,19 @@ This will:
 
 ```bash
 # Generate prediction for image at index 42
-python ./src/generate.py --index 42
+python main.py generate --index 42
 
 # Use a specific checkpoint
-python ./src/generate.py --index 10 --checkpoint ./model/run_20260106_023041_checkpoints/epoch_25_model_checkpoint.pth
+python main.py generate --index 10 --checkpoint ./runs/run_20260106_224314_checkpoints/epoch_25_model_checkpoint.pth
 ```
 
 ## Model Checkpoints
 
-Model checkpoints are saved in timestamped directories under `model/`:
-- `epoch_X_model_checkpoint.pth`: Checkpoint after epoch X
-- `best_model.pth`: Best model based on validation CER
+Model checkpoints are saved in timestamped directories under `runs/`:
+- `runs/run_YYYYMMDD_HHMMSS_checkpoints/epoch_X_model_checkpoint.pth`: Checkpoint after epoch X
+- `runs/run_YYYYMMDD_HHMMSS_checkpoints/best_model.pth`: Best model based on validation CER
+
+When running test or generate commands without specifying a checkpoint, the script automatically loads the most recent run directory.
 
 ## Performance
 
