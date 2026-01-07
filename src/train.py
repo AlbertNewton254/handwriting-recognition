@@ -8,11 +8,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 from src.core.config import *
 from src.core.utils import train_one_epoch, evaluate
 from src.data.dataloader import get_handwriting_dataloader
 from src.models.crnn import HandwritingRecognitionModel
+from src.visualization.plots import save_loss_plot, save_cer_plot
 
 
 def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, batch_size=32, accumulation_steps=4, learning_rate=0.001, device='cuda', num_workers=4):
@@ -100,35 +100,13 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
             }, best_model_path)
             print(f"\nBest model saved to {best_model_path} (Epoch: {epoch}, Val Loss: {val_loss:.4f})")
 
-    # Create plots directory
+    # Create plots directory and generate visualizations
     plots_dir = os.path.join(MODEL_CHECKPOINTS_DIR, "plots")
-    os.makedirs(plots_dir, exist_ok=True)
 
-    # Generate loss plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs_list, train_losses, label='Train Loss', marker='o', markersize=3)
-    plt.plot(epochs_list, val_losses, label='Val Loss', marker='s', markersize=3)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    loss_plot_path = os.path.join(plots_dir, "loss_plot.png")
-    plt.savefig(loss_plot_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    loss_plot_path = save_loss_plot(epochs_list, train_losses, val_losses, plots_dir)
     print(f"Loss plot saved to {loss_plot_path}")
 
-    # Generate CER plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs_list, val_cers, label='Val CER', marker='o', markersize=3, color='green')
-    plt.xlabel('Epoch')
-    plt.ylabel('CER (%)')
-    plt.title('Validation Character Error Rate')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    cer_plot_path = os.path.join(plots_dir, "cer_plot.png")
-    plt.savefig(cer_plot_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    cer_plot_path = save_cer_plot(epochs_list, val_cers, plots_dir)
     print(f"CER plot saved to {cer_plot_path}")
 
     print(f"\nTraining complete. Checkpoints saved in {MODEL_CHECKPOINTS_DIR}")
