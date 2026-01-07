@@ -246,31 +246,3 @@ def decode_ground_truth(label_indices, char_set=CHARACTER_SET):
     if hasattr(label_indices, 'tolist'):
         label_indices = label_indices.tolist()
     return ''.join([char_set[i - 1] for i in label_indices])
-
-
-def generate_text_from_image(model, test_dir, test_labels, index, device='cuda'):
-    """
-    Generate text prediction from a single image tensor using the trained model
-
-    model: The trained handwriting recognition model
-    test_dir: Directory containing test images
-    test_labels: Path to test labels CSV file
-    index: Index of the image in the dataset
-    device: Device to run inference on ('cuda' or 'cpu')
-
-    predicted_text: The predicted text string
-    """
-    model.eval()
-
-    test_loader = get_handwriting_dataloader(test_dir, test_labels, batch_size=1, shuffle=False, num_workers=0, with_transform=False)
-
-    image_tensor, _ = test_loader.dataset[index]
-    image_tensor = image_tensor.unsqueeze(0).to(device, non_blocking=True)
-
-    with torch.no_grad():
-        outputs = model(image_tensor)
-        # Use decode_predictions to decode the output
-        predicted_texts = decode_predictions(outputs, CHARACTER_SET)
-        predicted_text = predicted_texts[0]
-
-    return predicted_text
