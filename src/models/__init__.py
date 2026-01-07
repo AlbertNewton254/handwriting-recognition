@@ -1,7 +1,8 @@
 """
-__init__.py
+__init__.py - Models package
+
+This package contains model architectures:
+- crnn: CRNN (Convolutional Recurrent Neural Network) for handwriting recognition
 """
 
-# Imports removed to avoid circular dependencies
-# Import directly from the specific modules instead
-# from .handwriting_recognition_model import HandwritingRecognitionModel
+from .crnn import HandwritingRecognitionModel
