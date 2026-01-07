@@ -1,12 +1,12 @@
 """
-handwriting_dataloader.py
+dataloader.py - DataLoader factory for handwriting dataset
 """
 
 from torch.utils.data import DataLoader
 from ..core.config import TRAIN_DIR, TRAIN_LABELS_FILE, BATCH_SIZE, NUM_WORKERS
 from .collate import collate_fn
-from .handwriting_dataset import HandwritingDataset
-from .handwriting_transforms import HandwritingTransform
+from .dataset import HandwritingDataset
+from .transforms import HandwritingTransform
 
 def get_handwriting_dataloader(data_dir, labels_file, batch_size=32, shuffle=True, num_workers=4, with_transform=True):
     """

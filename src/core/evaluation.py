@@ -1,5 +1,5 @@
 """
-evaluation.py
+evaluation.py - Model evaluation functions
 """
 
 import torch

@@ -1,5 +1,5 @@
 """
-handwriting_transforms.py
+transforms.py - Image transformations for handwriting recognition
 """
 
 import torchvision.transforms as T

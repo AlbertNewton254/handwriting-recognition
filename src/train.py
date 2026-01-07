@@ -11,8 +11,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from src.core.config import *
 from src.core.utils import train_one_epoch, evaluate
-from src.data.handwriting_dataloader import get_handwriting_dataloader
-from src.models.handwriting_recognition_model import HandwritingRecognitionModel
+from src.data.dataloader import get_handwriting_dataloader
+from src.models.crnn import HandwritingRecognitionModel
 
 
 def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, batch_size=32, accumulation_steps=4, learning_rate=0.001, device='cuda', num_workers=4):

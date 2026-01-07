@@ -8,8 +8,8 @@ import argparse
 from src.core.config import *
 from src.core.utils import evaluate
 from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
-from src.data.handwriting_dataloader import get_handwriting_dataloader
-from src.models.handwriting_recognition_model import HandwritingRecognitionModel
+from src.data.dataloader import get_handwriting_dataloader
+from src.models.crnn import HandwritingRecognitionModel
 
 
 def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_workers=4, device='cuda'):

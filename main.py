@@ -14,7 +14,7 @@ from src.core.utils import get_device
 from src.core.checkpoints import find_latest_checkpoint
 from src.train import train_model
 from src.test import test_model
-from src.generate import generate_from_model
+from src.predict import generate_from_model
 from src.analyze import analyze_predictions
 
 

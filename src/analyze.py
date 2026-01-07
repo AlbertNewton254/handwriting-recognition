@@ -12,9 +12,9 @@ from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
 from src.core.utils import decode_predictions, decode_ground_truth
 from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
 from src.core.metrics import calculate_metrics
-from src.models.handwriting_recognition_model import HandwritingRecognitionModel
-from src.data.handwriting_dataset import HandwritingDataset
-from src.data.handwriting_transforms import HandwritingTransform
+from src.models.crnn import HandwritingRecognitionModel
+from src.data.dataset import HandwritingDataset
+from src.data.transforms import HandwritingTransform
 
 
 def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100, use_all=False, device='cuda'):

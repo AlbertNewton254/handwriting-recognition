@@ -1,5 +1,5 @@
 """
-handwriting_dataset.py
+dataset.py - Handwriting dataset for PyTorch
 """
 
 import os
