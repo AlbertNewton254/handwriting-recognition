@@ -1,3 +1,7 @@
+"""
+__init__.py
+"""
+
 # Imports removed to avoid circular dependencies
 # Import directly from the specific modules instead
 # from .config import *

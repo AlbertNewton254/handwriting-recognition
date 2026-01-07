@@ -1,3 +1,7 @@
+"""
+generate.py
+"""
+
 import torch
 import argparse
 from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET

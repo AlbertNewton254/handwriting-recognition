@@ -1,3 +1,7 @@
+"""
+config.py
+"""
+
 from datetime import datetime
 
 TRAIN_DIR = "./data/train/"

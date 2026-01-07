@@ -1,6 +1,5 @@
 """
-Analyze model predictions on random test samples
-Provides detailed metrics and error analysis
+analyze.py
 """
 
 import os

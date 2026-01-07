@@ -1,6 +1,5 @@
 """
-Main entry point for the handwriting recognition system.
-Provides unified interface for training, testing, and generating predictions.
+main.py
 """
 
 import argparse

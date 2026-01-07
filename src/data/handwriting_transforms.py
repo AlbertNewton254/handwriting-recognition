@@ -1,3 +1,7 @@
+"""
+handwriting_transforms.py
+"""
+
 import torchvision.transforms as T
 from ..core.config import *
 

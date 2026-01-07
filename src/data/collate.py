@@ -1,3 +1,7 @@
+"""
+collate.py
+"""
+
 import torch
 
 def collate_fn(batch):
