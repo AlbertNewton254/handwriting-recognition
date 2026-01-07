@@ -113,7 +113,6 @@ handwriting-recognition/
 │   ├── train.py                   # Training script (CLI + orchestration)
 │   ├── test.py                    # Testing script
 │   ├── predict.py                 # Single image prediction (new name)
-│   ├── generate.py                # Legacy prediction script (backward compatibility)
 │   └── analyze.py                 # Comprehensive error analysis
 ├── main.py                         # Unified CLI interface
 ├── setup.sh                        # Dataset setup script
