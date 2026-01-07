@@ -249,6 +249,7 @@ def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100,
 
 
 if __name__ == "__main__":
+    from src.core.utils import get_device
     parser = argparse.ArgumentParser(description="Analyze model predictions on test samples")
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     parser.add_argument('--num-samples', '-n', type=int, default=100,
@@ -261,7 +262,7 @@ if __name__ == "__main__":
                        help='Path to test labels CSV file')
     args = parser.parse_args()
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     # Find checkpoint

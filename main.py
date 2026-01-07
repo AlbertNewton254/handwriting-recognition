@@ -10,7 +10,7 @@ from src.core.config import (
     TEST_DIR, TEST_LABELS_FILE,
     EPOCHS, BATCH_SIZE, LEARNING_RATE, ACCUMULATION_STEPS, NUM_WORKERS
 )
-from src.core.utils import find_latest_checkpoint
+from src.core.utils import find_latest_checkpoint, get_device
 from src.train import train_model
 from src.test import test_model
 from src.generate import generate_from_model
@@ -19,7 +19,7 @@ from src.analyze import analyze_predictions
 
 def train_command(args):
     """Execute training command"""
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     train_model(
@@ -38,7 +38,7 @@ def train_command(args):
 
 def test_command(args):
     """Execute testing command"""
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     # Find checkpoint
@@ -57,7 +57,7 @@ def test_command(args):
 
 def generate_command(args):
     """Execute generation command"""
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     # Find checkpoint
@@ -77,7 +77,7 @@ def generate_command(args):
 
 def analyze_command(args):
     """Execute analysis command"""
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
 
     # Find checkpoint
     checkpoint_path = find_latest_checkpoint(args.checkpoint)

@@ -60,6 +60,7 @@ def generate_from_model(test_dir, test_labels, checkpoint_path, index, device='c
 
 
 if __name__ == "__main__":
+    from src.core.utils import get_device
     parser = argparse.ArgumentParser(description="Generate text prediction from a handwritten image")
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     parser.add_argument('--index', '-i', type=int, required=True, help='Index of the image in the test dataset')
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE, help='Path to test labels CSV file')
     args = parser.parse_args()
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     # Find checkpoint

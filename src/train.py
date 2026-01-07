@@ -135,7 +135,8 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
 
 
 if __name__ == "__main__":
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    from src.core.utils import get_device
+    device = get_device()
     print(f"Using device: {device}")
 
     train_model(

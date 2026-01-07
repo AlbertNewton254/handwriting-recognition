@@ -43,11 +43,12 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
 
 
 if __name__ == "__main__":
+    from src.core.utils import get_device
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     args = parser.parse_args()
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
 
     # Find checkpoint

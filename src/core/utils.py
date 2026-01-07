@@ -12,6 +12,15 @@ from .config import CHARACTER_SET
 from ..data.handwriting_dataloader import get_handwriting_dataloader
 
 
+def get_device():
+    """
+    Get the appropriate device for PyTorch operations
+
+    device: 'cuda' if GPU is available, otherwise 'cpu'
+    """
+    return 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
 def calculate_cer(predictions, ground_truths):
     """
     Calculate Character Error Rate (CER) for a batch of predictions
