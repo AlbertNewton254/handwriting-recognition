@@ -13,7 +13,7 @@ from src.models.crnn import HandwritingRecognitionModel
 from src.data.dataloader import get_handwriting_dataloader
 
 
-def generate_from_model(test_dir, test_labels, checkpoint_path, index, device='cuda'):
+def predict_from_model(test_dir, test_labels, checkpoint_path, index, device='cuda'):
     """
     Generate text prediction from a single image using a trained model
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     # Generate text from image
     print(f"\nGenerating text for image at index {args.index}...")
-    generate_from_model(
+    predict_from_model(
         test_dir=args.test_dir,
         test_labels=args.test_labels,
         checkpoint_path=checkpoint_path,

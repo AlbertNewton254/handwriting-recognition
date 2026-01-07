@@ -16,7 +16,7 @@ from src.core.device import get_device
 from src.core.checkpoints import find_latest_checkpoint
 from src.train import train_model
 from src.test import test_model
-from src.predict import generate_from_model
+from src.predict import predict_from_model
 from src.analyze import analyze_predictions
 
 
@@ -58,8 +58,8 @@ def test_command(args):
     )
 
 
-def generate_command(args):
-    """Execute generation command"""
+def predict_command(args):
+    """Execute prediction command"""
     device = get_device()
     print(f"Using device: {device}")
 
@@ -69,7 +69,7 @@ def generate_command(args):
 
     # Generate text from image
     print(f"\nGenerating text for image at index {args.index}...")
-    generate_from_model(
+    predict_from_model(
         test_dir=args.test_dir,
         test_labels=args.test_labels,
         checkpoint_path=checkpoint_path,
@@ -109,8 +109,8 @@ Examples:
   # Test a model
   python main.py test --checkpoint ./runs/run_20260106_024556_checkpoints/best_model.pth
 
-  # Generate prediction for a single image
-  python main.py generate --index 100
+  # Predict text from a single image
+  python main.py predict --index 100
 
   # Analyze predictions on random test samples
   python main.py analyze --num-samples 100
@@ -156,17 +156,17 @@ Examples:
                             help=f'Number of data loading workers (default: {NUM_WORKERS})')
     test_parser.set_defaults(func=test_command)
 
-    # Generate subcommand
-    generate_parser = subparsers.add_parser('generate', help='Generate prediction for a single image')
-    generate_parser.add_argument('--index', '-i', type=int, required=True,
+    # Predict subcommand
+    predict_parser = subparsers.add_parser('predict', help='Predict text from a single image')
+    predict_parser.add_argument('--index', '-i', type=int, required=True,
                                 help='Index of the image in the test dataset')
-    generate_parser.add_argument('--checkpoint', '-c', type=str,
+    predict_parser.add_argument('--checkpoint', '-c', type=str,
                                 help='Path to checkpoint file (uses most recent if not specified)')
-    generate_parser.add_argument('--test-dir', type=str, default=TEST_DIR,
+    predict_parser.add_argument('--test-dir', type=str, default=TEST_DIR,
                                 help=f'Directory containing test images (default: {TEST_DIR})')
-    generate_parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE,
+    predict_parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE,
                                 help=f'Path to test labels CSV (default: {TEST_LABELS_FILE})')
-    generate_parser.set_defaults(func=generate_command)
+    predict_parser.set_defaults(func=predict_command)
 
     # Analyze subcommand
     analyze_parser = subparsers.add_parser('analyze', help='Analyze predictions on random test samples')
