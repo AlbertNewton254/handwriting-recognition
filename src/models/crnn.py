@@ -56,7 +56,36 @@ class HandwritingRecognitionModel(nn.Module):
         return x
 
 if __name__ == "__main__":
+    # Unit test for HandwritingRecognitionModel
+    import torch
+
+    print("Testing HandwritingRecognitionModel...")
+
+    # Test model initialization
     model = HandwritingRecognitionModel()
+    print(f"OK - Model initialized with {sum(p.numel() for p in model.parameters())} parameters")
+
+    # Test forward pass with single image
     sample_input = torch.randn(1, 1, IMAGE_HEIGHT, IMAGE_WIDTH)
     output = model(sample_input)
-    print(f"Output shape: {output.shape}")  # Expected: (1, width, num_classes)
+    expected_width = IMAGE_WIDTH // 8  # After 3 MaxPool2d(2, 2)
+    num_classes = get_num_classes()
+    assert output.shape[0] == 1, f"Batch dimension mismatch: {output.shape[0]} != 1"
+    assert output.shape[1] == expected_width, f"Width dimension mismatch: {output.shape[1]} != {expected_width}"
+    assert output.shape[2] == num_classes, f"Classes dimension mismatch: {output.shape[2]} != {num_classes}"
+    print(f"OK - Single image output shape: {output.shape}")
+
+    # Test forward pass with batch
+    batch_input = torch.randn(4, 1, IMAGE_HEIGHT, IMAGE_WIDTH)
+    batch_output = model(batch_input)
+    assert batch_output.shape == (4, expected_width, num_classes), f"Batch output shape mismatch: {batch_output.shape}"
+    print(f"OK - Batch output shape: {batch_output.shape}")
+
+    # Test model in eval mode
+    model.eval()
+    with torch.no_grad():
+        eval_output = model(sample_input)
+    assert eval_output.shape == output.shape, "Eval mode changed output shape"
+    print(f"OK - Eval mode works correctly")
+
+    print("\nAll tests passed!")

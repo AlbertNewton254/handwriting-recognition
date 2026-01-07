@@ -41,8 +41,31 @@ class HandwritingTransform:
         return self.transform(image)
 
 if __name__ == "__main__":
-    transform = HandwritingTransform()
+    # Unit test for HandwritingTransform
     from PIL import Image
+    from ..core.config import IMAGE_HEIGHT, IMAGE_WIDTH
+
+    print("Testing HandwritingTransform...")
+
+    # Test with all transforms
+    transform_full = HandwritingTransform(random_blur=True, rotate=True)
     sample_image = Image.new('L', (200, 200), color=255)
-    transformed_image = transform(sample_image)
-    print(f"Transformed image size: {transformed_image.size()}") # Expected: (1, IMAGE_HEIGHT, IMAGE_WIDTH)
+    transformed = transform_full(sample_image)
+    assert transformed.size(0) == 1, f"Expected 1 channel, got {transformed.size(0)}"
+    assert transformed.size(1) == IMAGE_HEIGHT, f"Height mismatch: {transformed.size(1)} != {IMAGE_HEIGHT}"
+    assert transformed.size(2) == IMAGE_WIDTH, f"Width mismatch: {transformed.size(2)} != {IMAGE_WIDTH}"
+    print(f"OK - Full transform output shape: {transformed.size()}")
+
+    # Test without augmentations
+    transform_minimal = HandwritingTransform(random_blur=False, rotate=False)
+    transformed_minimal = transform_minimal(sample_image)
+    assert transformed_minimal.size() == transformed.size(), "Size mismatch between transform modes"
+    print(f"OK - Minimal transform output shape: {transformed_minimal.size()}")
+
+    # Test custom size
+    transform_custom = HandwritingTransform(resize=(32, 128))
+    transformed_custom = transform_custom(sample_image)
+    assert transformed_custom.size() == (1, 32, 128), f"Custom size failed: {transformed_custom.size()}"
+    print(f"OK - Custom size transform output shape: {transformed_custom.size()}")
+
+    print("\nAll tests passed!")

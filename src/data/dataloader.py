@@ -38,8 +38,39 @@ def get_handwriting_dataloader(data_dir, labels_file, batch_size=32, shuffle=Tru
     return dataloader
 
 if __name__ == "__main__":
-    dataloader = get_handwriting_dataloader(data_dir=TRAIN_DIR, labels_file=TRAIN_LABELS_FILE, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
+    # Unit test for get_handwriting_dataloader
+    import torch
+    from ..core.config import IMAGE_HEIGHT, IMAGE_WIDTH
+
+    print("Testing get_handwriting_dataloader...")
+
+    # Test with transforms
+    dataloader = get_handwriting_dataloader(
+        data_dir=TRAIN_DIR,
+        labels_file=TRAIN_LABELS_FILE,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        with_transform=True
+    )
+    print(f"OK - DataLoader created with transforms")
+
+    # Test batch retrieval
     images, labels, label_lengths = next(iter(dataloader))
-    print(f"Batch image tensor size: {images.size()}") # Expected: (BATCH_SIZE, 1, IMAGE_HEIGHT, IMAGE_WIDTH)
-    print(f"Batch label indices: {labels}") # Expected: Tensor of label indices
-    print(f"Batch label lengths: {label_lengths}") # Expected: Tensor of label lengths
+    assert images.size(0) == BATCH_SIZE, f"Batch size mismatch: {images.size(0)} != {BATCH_SIZE}"
+    assert images.size(1) == 1, f"Expected 1 channel, got {images.size(1)}"
+    assert images.size(2) == IMAGE_HEIGHT, f"Height mismatch: {images.size(2)} != {IMAGE_HEIGHT}"
+    assert images.size(3) == IMAGE_WIDTH, f"Width mismatch: {images.size(3)} != {IMAGE_WIDTH}"
+    print(f"OK - Batch shape: {images.size()}")
+    print(f"OK - Label lengths: {label_lengths.tolist()[:5]}...")
+
+    # Test without transforms
+    dataloader_no_transform = get_handwriting_dataloader(
+        data_dir=TRAIN_DIR,
+        labels_file=TRAIN_LABELS_FILE,
+        batch_size=4,
+        num_workers=0,
+        with_transform=False
+    )
+    print(f"OK - DataLoader created without transforms")
+
+    print("\nAll tests passed!")

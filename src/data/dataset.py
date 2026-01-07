@@ -102,8 +102,23 @@ class HandwritingDataset(Dataset):
         return image, label_indices
 
 if __name__ == "__main__":
+    # Unit test for HandwritingDataset
+    print("Testing HandwritingDataset...")
+
     dataset = HandwritingDataset(images_dir=TRAIN_DIR, labels_file=TRAIN_LABELS_FILE)
+    print(f"OK - Dataset loaded with {len(dataset)} samples")
+
+    # Test sample retrieval
     sample_image, sample_label = dataset[0]
-    print(f"Sample image size: {sample_image.size}")
-    print(f"Sample label indices: {sample_label}")
-    print(f"Sample label text: {dataset.indices_to_text(sample_label)}")
+    print(f"OK - Sample image size: {sample_image.size}")
+    print(f"OK - Sample label indices: {sample_label}")
+    print(f"OK - Sample label text: '{dataset.indices_to_text(sample_label)}'")
+
+    # Test text encoding/decoding
+    test_text = "Hello World"
+    encoded = dataset.text_to_indices(test_text)
+    decoded = dataset.indices_to_text(encoded)
+    assert decoded == test_text, f"Encoding/decoding failed: {test_text} != {decoded}"
+    print(f"OK - Text encoding/decoding test passed")
+
+    print("\nAll tests passed!")
