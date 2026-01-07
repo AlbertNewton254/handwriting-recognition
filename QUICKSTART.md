@@ -33,13 +33,13 @@ venv\Scripts\activate  # On Windows
 ### 3. Install Dependencies
 
 ```bash
-pip install torch torchvision numpy pillow pandas
+pip install torch torchvision numpy pillow pandas python-Levenshtein
 ```
 
 For CUDA support (GPU acceleration):
 ```bash
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install numpy pillow pandas
+pip install numpy pillow pandas python-Levenshtein
 ```
 
 ### 4. Set Up the Dataset Structure
@@ -121,6 +121,37 @@ This will:
 3. Display metrics (CER, accuracy, etc.)
 4. Show sample predictions
 
+## Analyzing Model Predictions
+
+For detailed error analysis on random test samples:
+
+```bash
+python main.py analyze --num-samples 100
+# or
+python ./src/analyze.py
+```
+
+This provides:
+- Exact match rate
+- Character Error Rate (CER) and Word Error Rate (WER)
+- Character and word-level statistics
+- Examples of correct and incorrect predictions
+- Common error patterns
+- Detailed results saved to `prediction_analysis_results.txt`
+
+### Example Output
+
+```
+PREDICTION ANALYSIS RESULTS
+======================================================================
+Total Samples Analyzed: 100
+
+ACCURACY METRICS
+Exact Match Rate:        85.00% (85/100)
+Character Error Rate:    5.12%
+Word Error Rate:         12.50%
+```
+
 ## Generating Predictions from Individual Images
 
 To see predictions for specific test images:
@@ -170,10 +201,11 @@ NUM_WORKERS = 4 # Data loading workers
 
 ## Next Steps
 
+- **Analyze predictions**: Use `python main.py analyze` for detailed error analysis
 - **Test individual predictions**: Use `generate.py` to see predictions on different images
 - **Experiment with hyperparameters**: Try different learning rates, batch sizes, or model architectures
-- **Analyze results**: Examine which characters or words are hardest to recognize
-- **Fine-tune the model**: Train for more epochs or adjust the model architecture
+- **Identify problem areas**: Use the analyze command to examine which characters or words are hardest to recognize
+- **Fine-tune the model**: Train for more epochs or adjust the model architecture based on analysis results
 - **Add augmentation**: Implement additional data augmentation techniques
 - **Deploy the model**: Use the trained model in a web app or API
 
