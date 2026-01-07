@@ -43,7 +43,7 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
     state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
 
-    # Evaluate on test set
+    # Evaluate on test set with CER calculation
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     test_loss, test_cer = evaluate(model, test_loader, criterion=criterion, device=device)
 

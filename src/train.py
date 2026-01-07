@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from src.core.config import *
 from src.core.utils import train_one_epoch, evaluate
 from src.data.handwriting_dataloader import get_handwriting_dataloader
@@ -42,13 +43,30 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     best_val_loss = float('inf')
+
+    # Track metrics for plotting
+    train_losses = []
+    val_losses = []
+    val_cers = []
+    epochs_list = []
+
     pbar = tqdm(range(1, num_epochs + 1), desc="Training Progress")
 
     for epoch in pbar:
         train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device, accumulation_steps)
-        val_loss, _ = evaluate(model, val_dataloader, criterion, device)
+        val_loss, val_cer = evaluate(model, val_dataloader, criterion, device)
 
-        pbar.set_postfix({'Epoch': epoch, 'Train Loss': f"{train_loss:.4f}", 'Val Loss': f"{val_loss:.4f}"})
+        # Store metrics
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        val_cers.append(val_cer)
+        epochs_list.append(epoch)
+
+        pbar.set_postfix({'Epoch': epoch, 'Train Loss': f"{train_loss:.4f}", 'Val Loss': f"{val_loss:.4f}", 'Val CER': f"{val_cer:.2f}%"})
+
+        # Print CER every 5 epochs for more visibility
+        if epoch % 5 == 0:
+            print(f"\nEpoch {epoch} - Val CER: {val_cer:.2f}%")
 
         # At each 5 epochs, save a checkpoint
         if epoch % 5 == 0:
@@ -73,6 +91,37 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
                 'val_loss': val_loss,
             }, best_model_path)
             print(f"\nBest model saved to {best_model_path} (Epoch: {epoch}, Val Loss: {val_loss:.4f})")
+
+    # Create plots directory
+    plots_dir = os.path.join(MODEL_CHECKPOINTS_DIR, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+
+    # Generate loss plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs_list, train_losses, label='Train Loss', marker='o', markersize=3)
+    plt.plot(epochs_list, val_losses, label='Val Loss', marker='s', markersize=3)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    loss_plot_path = os.path.join(plots_dir, "loss_plot.png")
+    plt.savefig(loss_plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Loss plot saved to {loss_plot_path}")
+
+    # Generate CER plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs_list, val_cers, label='Val CER', marker='o', markersize=3, color='green')
+    plt.xlabel('Epoch')
+    plt.ylabel('CER (%)")
+    plt.title('Validation Character Error Rate')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    cer_plot_path = os.path.join(plots_dir, "cer_plot.png")
+    plt.savefig(cer_plot_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"CER plot saved to {cer_plot_path}")
 
     print(f"\nTraining complete. Checkpoints saved in {MODEL_CHECKPOINTS_DIR}")
 
