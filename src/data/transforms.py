@@ -1,5 +1,7 @@
 """
-transforms.py - Image transformations for handwriting recognition
+transforms.py
+
+Image transformation pipeline for data augmentation
 """
 
 import torchvision.transforms as T

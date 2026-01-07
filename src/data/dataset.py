@@ -1,5 +1,7 @@
 """
-dataset.py - Handwriting dataset for PyTorch
+dataset.py
+
+PyTorch Dataset implementation for handwriting images
 """
 
 import os

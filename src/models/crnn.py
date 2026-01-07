@@ -1,5 +1,7 @@
 """
-crnn.py - CRNN model for handwriting recognition
+crnn.py
+
+CRNN architecture for handwriting recognition
 """
 
 import torch

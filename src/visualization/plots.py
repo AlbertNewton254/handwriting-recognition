@@ -1,5 +1,7 @@
 """
-plots.py - Plotting functions for training metrics
+plots.py
+
+Plotting functions for training metrics visualization
 """
 
 import os

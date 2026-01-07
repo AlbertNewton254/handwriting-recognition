@@ -1,5 +1,7 @@
 """
 main.py
+
+Command-line interface for handwriting recognition system
 """
 
 import argparse
@@ -10,7 +12,7 @@ from src.core.config import (
     TEST_DIR, TEST_LABELS_FILE,
     EPOCHS, BATCH_SIZE, LEARNING_RATE, ACCUMULATION_STEPS, NUM_WORKERS
 )
-from src.core.utils import get_device
+from src.core.device import get_device
 from src.core.checkpoints import find_latest_checkpoint
 from src.train import train_model
 from src.test import test_model

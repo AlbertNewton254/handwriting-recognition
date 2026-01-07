@@ -1,5 +1,7 @@
 """
 metrics.py
+
+Evaluation metrics calculation (CER, WER, accuracy)
 """
 
 import Levenshtein

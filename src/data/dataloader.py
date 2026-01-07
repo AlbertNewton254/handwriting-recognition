@@ -1,5 +1,7 @@
 """
-dataloader.py - DataLoader factory for handwriting dataset
+dataloader.py
+
+DataLoader factory with configurable transforms and batching
 """
 
 from torch.utils.data import DataLoader

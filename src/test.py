@@ -1,12 +1,14 @@
 """
 test.py
+
+Model testing and evaluation script
 """
 
 import torch
 import torch.nn as nn
 import argparse
 from src.core.config import *
-from src.core.utils import evaluate
+from src.core.evaluation import evaluate
 from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
 from src.data.dataloader import get_handwriting_dataloader
 from src.models.crnn import HandwritingRecognitionModel
@@ -44,7 +46,7 @@ def test_model(test_dir, test_labels, checkpoint_path, batch_size=32, num_worker
 
 
 if __name__ == "__main__":
-    from src.core.utils import get_device
+    from src.core.device import get_device
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     args = parser.parse_args()

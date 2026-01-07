@@ -1,5 +1,7 @@
 """
 train.py
+
+Model training script with gradient accumulation and mixed precision
 """
 
 import os
@@ -9,7 +11,8 @@ import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 from src.core.config import *
-from src.core.utils import train_one_epoch, evaluate
+from src.core.training import train_one_epoch
+from src.core.evaluation import evaluate
 from src.data.dataloader import get_handwriting_dataloader
 from src.models.crnn import HandwritingRecognitionModel
 from src.visualization.plots import save_loss_plot, save_cer_plot
@@ -113,7 +116,7 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
 
 
 if __name__ == "__main__":
-    from src.core.utils import get_device
+    from src.core.device import get_device
     device = get_device()
     print(f"Using device: {device}")
 

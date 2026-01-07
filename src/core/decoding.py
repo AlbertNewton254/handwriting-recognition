@@ -1,5 +1,7 @@
 """
 decoding.py
+
+CTC output decoding and text conversion utilities
 """
 
 import torch

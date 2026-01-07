@@ -1,5 +1,7 @@
 """
 training.py
+
+Training loop implementation with gradient accumulation
 """
 
 import torch

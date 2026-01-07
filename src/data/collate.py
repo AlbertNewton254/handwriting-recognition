@@ -1,5 +1,7 @@
 """
 collate.py
+
+Custom collate function for variable-length sequences
 """
 
 import torch

@@ -1,5 +1,7 @@
 """
 analyze.py
+
+Detailed prediction analysis and error reporting
 """
 
 import os
@@ -9,7 +11,7 @@ import argparse
 from datetime import datetime
 import Levenshtein
 from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
-from src.core.utils import decode_predictions, decode_ground_truth
+from src.core.decoding import decode_predictions, decode_ground_truth
 from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
 from src.core.metrics import calculate_metrics
 from src.models.crnn import HandwritingRecognitionModel
@@ -189,7 +191,7 @@ def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100,
 
 
 if __name__ == "__main__":
-    from src.core.utils import get_device
+    from src.core.device import get_device
     parser = argparse.ArgumentParser(description="Analyze model predictions on test samples")
     parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
     parser.add_argument('--num-samples', '-n', type=int, default=100,

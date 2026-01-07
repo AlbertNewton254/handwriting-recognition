@@ -1,5 +1,7 @@
 """
 checkpoints.py
+
+Model checkpoint management and loading utilities
 """
 
 import torch

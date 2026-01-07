@@ -1,5 +1,7 @@
 """
 config.py
+
+Configuration constants and settings
 """
 
 from datetime import datetime
