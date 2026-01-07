@@ -7,6 +7,7 @@ import torch
 import random
 import argparse
 from collections import defaultdict
+from datetime import datetime
 import Levenshtein
 from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
 from src.core.utils import decode_predictions, find_latest_checkpoint, load_model_checkpoint, decode_ground_truth
@@ -167,13 +168,62 @@ def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100,
         for pattern, count in sorted_errors[:5]:
             print(f"{count}x: {pattern}")
 
-    # Save detailed results in checkpoint directory
+    # Save detailed results in checkpoint directory with timestamp
     checkpoint_dir = os.path.dirname(checkpoint_path)
     analyze_dir = os.path.join(checkpoint_dir, "analyze")
     os.makedirs(analyze_dir, exist_ok=True)
 
-    output_file = os.path.join(analyze_dir, "prediction_analysis_results.txt")
+    # Generate timestamp in YYMMDD_HHMMSS format
+    timestamp = datetime.now().strftime('%y%m%d_%H%M%S')
+    output_file = os.path.join(analyze_dir, f"prediction_{timestamp}_analyze_results.txt")
+
     with open(output_file, 'w') as f:
+        # Write header with timestamp
+        f.write(f"=== prediction_{timestamp} ===\n\n\n")
+
+        # Write all metrics
+        f.write("=" * 70 + "\n")
+        f.write("PREDICTION ANALYSIS RESULTS\n")
+        f.write("=" * 70 + "\n\n")
+        f.write(f"Total Samples Analyzed: {metrics['total_samples']}\n")
+        f.write(f"\n{'ACCURACY METRICS':-^70}\n")
+        f.write(f"Exact Match Rate:        {metrics['exact_match_rate']:.2%} ({metrics['exact_matches']}/{metrics['total_samples']})\n")
+        f.write(f"Character Error Rate:    {metrics['cer']:.2%}\n")
+        f.write(f"Word Error Rate:         {metrics['wer']:.2%}\n")
+
+        f.write(f"\n{'CHARACTER-LEVEL STATISTICS':-^70}\n")
+        f.write(f"Total Characters (GT):   {metrics['total_chars_gt']}\n")
+        f.write(f"Total Characters (Pred): {metrics['total_chars_pred']}\n")
+        f.write(f"Character Errors:        {metrics['char_errors']}\n")
+        f.write(f"Avg Length Difference:   {metrics['avg_length_diff']:+.2f} chars\n")
+
+        f.write(f"\n{'WORD-LEVEL STATISTICS':-^70}\n")
+        f.write(f"Total Words (GT):        {metrics['total_words']}\n")
+        f.write(f"Word Errors:             {metrics['word_errors']}\n")
+
+        # Write correct predictions
+        f.write(f"\n{'CORRECT PREDICTIONS (First 5)':-^70}\n")
+        for i, (pred, gt) in enumerate(metrics['correct_predictions'][:5], 1):
+            f.write(f"{i}. '{gt}'\n")
+
+        # Write incorrect predictions
+        f.write(f"\n{'INCORRECT PREDICTIONS (First 10)':-^70}\n")
+        for i, (pred, gt) in enumerate(metrics['incorrect_predictions'][:10], 1):
+            edit_dist = Levenshtein.distance(pred, gt)
+            f.write(f"\n{i}. Edit Distance: {edit_dist}\n")
+            f.write(f"   GT:   '{gt}'\n")
+            f.write(f"   Pred: '{pred}'\n")
+
+        # Write common error patterns
+        if metrics['common_errors']:
+            f.write(f"\n{'MOST COMMON ERROR PATTERNS':-^70}\n")
+            sorted_errors = sorted(metrics['common_errors'].items(), key=lambda x: x[1], reverse=True)
+            for pattern, count in sorted_errors[:5]:
+                f.write(f"{count}x: {pattern}\n")
+
+        # Write detailed predictions
+        f.write("\n\n")
+        f.write("=" * 70 + "\n")
         f.write("DETAILED PREDICTION RESULTS\n")
         f.write("=" * 70 + "\n\n")
 
