@@ -88,23 +88,32 @@ handwriting-recognition/
 │       ├── analyze/               # Analysis results
 │       │   └── prediction_YYMMDD_HHMMSS_analyze_results.txt
 │       └── plots/                 # Training curves (loss, CER)
-├── src/                            # Source code
-│   ├── core/                       # Core utilities
-│   │   ├── __init__.py
-│   │   ├── config.py              # Configuration (batch size, epochs, etc.)
-│   │   └── utils.py               # Training/evaluation utilities
-│   ├── data/                       # Data pipeline
-│   │   ├── __init__.py
-│   │   ├── handwriting_dataset.py # PyTorch Dataset
-│   │   ├── handwriting_dataloader.py # DataLoader factory
-│   │   ├── handwriting_transforms.py # Image preprocessing
+├── src/                            # Source code (modular architecture)
+│   ├── core/                       # Core utilities (single responsibility modules)
+│   │   ├── __init__.py            # Convenience imports
+│   │   ├── config.py              # Configuration constants
+│   │   ├── checkpoints.py         # Checkpoint loading/finding
+│   │   ├── decoding.py            # CTC output decoding
+│   │   ├── device.py              # Device management (CPU/GPU)
+│   │   ├── evaluation.py          # Model evaluation logic
+│   │   ├── metrics.py             # Performance metrics (CER, WER)
+│   │   └── training.py            # Training loop logic
+│   ├── data/                       # Data pipeline (dataset and transformations)
+│   │   ├── __init__.py            # Package exports
+│   │   ├── dataset.py             # PyTorch Dataset implementation
+│   │   ├── dataloader.py          # DataLoader factory
+│   │   ├── transforms.py          # Image preprocessing and augmentation
 │   │   └── collate.py             # Batch collation for variable-length sequences
 │   ├── models/                     # Model architectures
+│   │   ├── __init__.py            # Model exports
+│   │   └── crnn.py                # CRNN model (CNN + LSTM + CTC)
+│   ├── visualization/              # Plotting and visualization
 │   │   ├── __init__.py
-│   │   └── handwriting_recognition_model.py # CRNN model
-│   ├── train.py                   # Training script
+│   │   └── plots.py               # Training curves generation
+│   ├── train.py                   # Training script (CLI + orchestration)
 │   ├── test.py                    # Testing script
-│   ├── generate.py                # Single image prediction
+│   ├── predict.py                 # Single image prediction (new name)
+│   ├── generate.py                # Legacy prediction script (backward compatibility)
 │   └── analyze.py                 # Comprehensive error analysis
 ├── main.py                         # Unified CLI interface
 ├── setup.sh                        # Dataset setup script
@@ -119,11 +128,29 @@ handwriting-recognition/
 |------|---------|
 | [main.py](main.py) | Unified command-line interface for train/test/analyze/generate |
 | [src/core/config.py](src/core/config.py) | Central configuration (hyperparameters, paths) |
-| [src/models/handwriting_recognition_model.py](src/models/handwriting_recognition_model.py) | CRNN model definition |
-| [src/train.py](src/train.py) | Training loop with mixed precision and gradient accumulation |
-| [src/test.py](src/test.py) | Evaluation on test set |
+| [src/core/checkpoints.py](src/core/checkpoints.py) | Checkpoint management (load, find latest) |
+| [src/core/decoding.py](src/core/decoding.py) | CTC decoding utilities |
+| [src/core/evaluation.py](src/core/evaluation.py) | Model evaluation with CER calculation |
+| [src/core/metrics.py](src/core/metrics.py) | Performance metrics (CER, WER, exact match) |
+| [src/core/training.py](src/core/training.py) | Training loop with mixed precision |
+| [src/models/crnn.py](src/models/crnn.py) | CRNN model definition |
+| [src/data/dataset.py](src/data/dataset.py) | PyTorch Dataset for handwriting images |
+| [src/data/dataloader.py](src/data/dataloader.py) | DataLoader factory with transforms |
+| [src/visualization/plots.py](src/visualization/plots.py) | Training visualization plots |
+| [src/train.py](src/train.py) | Training orchestration script |
+| [src/test.py](src/test.py) | Model testing and evaluation |
 | [src/analyze.py](src/analyze.py) | Detailed error analysis with metrics |
-| [src/generate.py](src/generate.py) | Single image inference |
+| [src/predict.py](src/predict.py) | Single image inference |
+
+### Module Organization
+
+The codebase follows Kent Beck's refactoring principles with clear separation of concerns:
+
+- **Core modules**: Each handles a single responsibility (device, checkpoints, metrics, etc.)
+- **Data pipeline**: Cleanly separated dataset, transforms, and dataloading logic
+- **Models**: Self-contained model definitions with unit tests
+- **Scripts**: High-level orchestration that composes core functionality
+- **No circular dependencies**: Clear import hierarchy (config -> data -> models -> scripts)
 
 ## Requirements
 
@@ -326,6 +353,30 @@ IMAGE_WIDTH = 256           # Input width
 # Output paths (auto-generated with timestamp)
 MODEL_CHECKPOINTS_DIR = f"./runs/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_checkpoints/"
 ```
+
+### Module Testing
+
+Each core module includes unit tests that can be run independently:
+
+```bash
+# Test dataset implementation
+python -m src.data.dataset
+
+# Test dataloader
+python -m src.data.dataloader
+
+# Test transforms
+python -m src.data.transforms
+
+# Test CRNN model
+python -m src.models.crnn
+```
+
+All unit tests use ASCII output ("OK" for success) and verify:
+- Correct tensor shapes
+- Proper data loading
+- Model forward pass
+- Transform pipelines
 
 ### Adjusting for GPU Memory
 
