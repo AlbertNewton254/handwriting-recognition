@@ -7,8 +7,8 @@ from torch.cuda.amp import autocast
 import glob
 import os
 import sys
-import Levenshtein
 from .config import CHARACTER_SET
+from .metrics import calculate_cer
 from ..data.handwriting_dataloader import get_handwriting_dataloader
 
 
@@ -19,29 +19,6 @@ def get_device():
     device: 'cuda' if GPU is available, otherwise 'cpu'
     """
     return 'cuda' if torch.cuda.is_available() else 'cpu'
-
-
-def calculate_cer(predictions, ground_truths):
-    """
-    Calculate Character Error Rate (CER) for a batch of predictions
-
-    predictions: List of predicted text strings
-    ground_truths: List of ground truth text strings
-
-    cer: Character Error Rate as a percentage
-    """
-    total_distance = 0
-    total_length = 0
-
-    for pred, truth in zip(predictions, ground_truths):
-        distance = Levenshtein.distance(pred, truth)
-        total_distance += distance
-        total_length += len(truth)
-
-    if total_length == 0:
-        return 0.0
-
-    return (total_distance / total_length) * 100
 
 
 def decode_predictions(outputs, char_set):
