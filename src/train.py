@@ -114,7 +114,7 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
     plt.figure(figsize=(10, 6))
     plt.plot(epochs_list, val_cers, label='Val CER', marker='o', markersize=3, color='green')
     plt.xlabel('Epoch')
-    plt.ylabel('CER (%)")
+    plt.ylabel('CER (%)')
     plt.title('Validation Character Error Rate')
     plt.legend()
     plt.grid(True, alpha=0.3)
