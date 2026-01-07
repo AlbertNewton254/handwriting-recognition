@@ -85,10 +85,7 @@ Detailed error analysis with metrics. Results saved to `runs/.../analyze/predict
 
 ```bash
 # Using unified CLI (recommended)
-python main.py generate --index 0
-
-# Or directly
-python -m src.generate --index 0
+python main.py predict --index 0
 
 # Using new predict.py (same functionality)
 python -m src.predict --index 0
@@ -151,15 +148,14 @@ All unit tests use ASCII output ("OK" for passing tests, "WRONG" for failures).
 | `python main.py test` | Test on test set (41,370 images) |
 | `python main.py analyze` | Detailed error analysis |
 | `python main.py analyze --all` | Analyze entire test set |
-| `python main.py generate --index N` | Predict single image |
+| `python main.py predict --index N` | Predict single image |
 
 All commands support `--checkpoint` to specify a model checkpoint.
 
 **Direct module execution:**
 - `python -m src.train` - Same as `python main.py train`
 - `python -m src.test` - Same as `python main.py test`
-- `python -m src.analyze` - Same as `python main.py analyze`
-- `python -m src.predict --index N` - Same as `python main.py generate`
+- `python -m src.predict --index N` - Same as `python main.py predict`
 
 ## Requirements
 
