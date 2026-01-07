@@ -80,12 +80,17 @@ def analyze_command(args):
     """Execute analysis command"""
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    # Find checkpoint
+    checkpoint_path = find_latest_checkpoint(args.checkpoint)
+    print(f"Using checkpoint: {checkpoint_path}")
+
     analyze_predictions(
-        num_samples=args.num_samples,
-        device=device,
-        checkpoint=args.checkpoint,
         test_dir=args.test_dir,
-        test_labels=args.test_labels
+        test_labels=args.test_labels,
+        checkpoint_path=checkpoint_path,
+        num_samples=args.num_samples,
+        use_all=args.all,
+        device=device
     )
 
 
@@ -164,7 +169,9 @@ Examples:
     # Analyze subcommand
     analyze_parser = subparsers.add_parser('analyze', help='Analyze predictions on random test samples')
     analyze_parser.add_argument('--num-samples', '-n', type=int, default=100,
-                               help='Number of random samples to analyze (default: 100)')
+                               help='Number of random samples to analyze (default: 100, ignored if --all is used)')
+    analyze_parser.add_argument('--all', action='store_true',
+                               help='Analyze entire test dataset instead of random samples')
     analyze_parser.add_argument('--checkpoint', '-c', type=str,
                                help='Path to checkpoint file (uses most recent if not specified)')
     analyze_parser.add_argument('--test-dir', type=str, default=TEST_DIR,

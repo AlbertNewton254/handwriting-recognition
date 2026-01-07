@@ -6,13 +6,14 @@ Provides detailed metrics and error analysis
 import os
 import torch
 import random
+import argparse
 from collections import defaultdict
 import Levenshtein
-from .models.handwriting_recognition_model import HandwritingRecognitionModel
-from .data.handwriting_dataset import HandwritingDataset
-from .data.handwriting_transforms import HandwritingTransform
-from .core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
-from .core.utils import decode_predictions, find_latest_checkpoint, load_model_checkpoint, decode_ground_truth
+from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
+from src.core.utils import decode_predictions, find_latest_checkpoint, load_model_checkpoint, decode_ground_truth
+from src.models.handwriting_recognition_model import HandwritingRecognitionModel
+from src.data.handwriting_dataset import HandwritingDataset
+from src.data.handwriting_transforms import HandwritingTransform
 
 
 def calculate_metrics(predictions, ground_truths):
@@ -69,34 +70,25 @@ def calculate_metrics(predictions, ground_truths):
     return metrics
 
 
-def main():
-    """Main entry point for standalone execution"""
-    analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=None, test_labels=None)
-
-
-def analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=None, test_labels=None):
+def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100, use_all=False, device='cuda'):
     """
-    Analyze model predictions on random test samples
+    Analyze model predictions on random test samples or entire dataset
 
-    num_samples: Number of random samples to analyze
-    device: Device to use (defaults to cuda if available)
-    checkpoint: Path to checkpoint file (defaults to most recent)
-    test_dir: Test images directory (defaults to config)
-    test_labels: Test labels file (defaults to config)
+    test_dir: Directory containing test images
+    test_labels: Path to test labels CSV file
+    checkpoint_path: Path to model checkpoint file to load
+    num_samples: Number of random samples to analyze (ignored if use_all=True)
+    use_all: If True, analyze entire dataset instead of random samples
+    device: Device to test on ('cuda' or 'cpu')
     """
     # Configuration
-    if device is None:
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    if test_dir is None:
-        test_dir = TEST_DIR
-    if test_labels is None:
-        test_labels = TEST_LABELS_FILE
-
     print(f"Using device: {device}")
-    print(f"Analyzing {num_samples} random samples from test set\n")
+    if use_all:
+        print(f"Analyzing entire test set\n")
+    else:
+        print(f"Analyzing {num_samples} random samples from test set\n")
 
     # Find and load checkpoint
-    checkpoint_path = find_latest_checkpoint(checkpoint)
     print(f"Loading checkpoint: {checkpoint_path}")
 
     model = HandwritingRecognitionModel().to(device)
@@ -111,10 +103,13 @@ def analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=
 
     print(f"Total test samples: {len(dataset)}")
 
-    # Select random samples
-    sample_indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
-
-    print(f"Analyzing {len(sample_indices)} random samples...\n")
+    # Select samples (all or random)
+    if use_all:
+        sample_indices = list(range(len(dataset)))
+        print(f"Analyzing all {len(sample_indices)} samples...\n")
+    else:
+        sample_indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
+        print(f"Analyzing {len(sample_indices)} random samples...\n")
 
     # Run predictions
     predictions = []
@@ -177,7 +172,7 @@ def analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=
     checkpoint_dir = os.path.dirname(checkpoint_path)
     analyze_dir = os.path.join(checkpoint_dir, "analyze")
     os.makedirs(analyze_dir, exist_ok=True)
-    
+
     output_file = os.path.join(analyze_dir, "prediction_analysis_results.txt")
     with open(output_file, 'w') as f:
         f.write("DETAILED PREDICTION RESULTS\n")
@@ -196,4 +191,31 @@ def analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Analyze model predictions on test samples")
+    parser.add_argument('--checkpoint', '-c', type=str, help='Path to checkpoint file')
+    parser.add_argument('--num-samples', '-n', type=int, default=100,
+                       help='Number of random samples to analyze (default: 100, ignored if --all is used)')
+    parser.add_argument('--all', action='store_true',
+                       help='Analyze entire test dataset instead of random samples')
+    parser.add_argument('--test-dir', type=str, default=TEST_DIR,
+                       help='Directory containing test images')
+    parser.add_argument('--test-labels', type=str, default=TEST_LABELS_FILE,
+                       help='Path to test labels CSV file')
+    args = parser.parse_args()
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {device}")
+
+    # Find checkpoint
+    checkpoint_path = find_latest_checkpoint(args.checkpoint)
+    print(f"Using checkpoint: {checkpoint_path}")
+
+    # Analyze predictions
+    analyze_predictions(
+        test_dir=args.test_dir,
+        test_labels=args.test_labels,
+        checkpoint_path=checkpoint_path,
+        num_samples=args.num_samples,
+        use_all=args.all,
+        device=device
+    )
