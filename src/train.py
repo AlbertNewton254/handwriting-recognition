@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from src.core.config import *
@@ -42,6 +43,9 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
+    # Initialize GradScaler for mixed precision training
+    scaler = GradScaler() if device == 'cuda' else None
+
     best_val_loss = float('inf')
 
     # Track metrics for plotting
@@ -53,7 +57,7 @@ def train_model(train_dir, train_labels, val_dir, val_labels, num_epochs=10, bat
     pbar = tqdm(range(1, num_epochs + 1), desc="Training Progress")
 
     for epoch in pbar:
-        train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device, accumulation_steps)
+        train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device, accumulation_steps, scaler)
         val_loss, val_cer = evaluate(model, val_dataloader, criterion, device)
 
         # Store metrics
