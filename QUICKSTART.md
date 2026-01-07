@@ -1,203 +1,89 @@
 # Quick Start Guide
 
-This guide will help you get the handwriting recognition model up and running in minutes.
+Get the handwriting recognition model up and running ASAP.
 
-## Prerequisites
-
-- Linux, macOS, or Windows with WSL
-- Python 3.8 or higher
-- pip (Python package manager)
-- curl and unzip utilities
-- (Optional) NVIDIA GPU with CUDA support for faster training
-
-## Step-by-Step Installation
-
-### 1. Clone the Repository
-
-If you haven't already, clone or download this repository:
+## Setup (5 minutes)
 
 ```bash
+# 1. Clone and enter directory
 git clone git@github.com:AlbertNewton254/handwriting-recognition.git
 cd handwriting-recognition
-```
 
-### 2. Create a Virtual Environment (Recommended)
+# 2. Install dependencies
+pip install torch torchvision numpy pillow pandas python-Levenshtein tqdm matplotlib
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Linux/macOS
-# or
-venv\Scripts\activate  # On Windows
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install torch torchvision numpy pillow pandas python-Levenshtein
-```
-
-For CUDA support (GPU acceleration):
-```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install numpy pillow pandas python-Levenshtein
-```
-
-### 4. Set Up the Dataset Structure
-
-Run the setup script:
-
-```bash
+# 3. Setup dataset
 bash setup.sh
+
+# Done! Ready to train.
 ```
 
-This script will:
-- Fetch data from `https://www.kaggle.com/api/v1/datasets/download/landlord/handwriting-recognition`
-- Create the `data/` directory
-- Organize training, validation, and test images into separate folders
-- Move CSV label files to the correct locations
-- Clean up temporary files
-
-After completion, your `data/` directory should look like:
-```
-data/
-├── train/          # Training images
-├── validation/     # Validation images
-├── test/           # Test images
-├── train.csv       # Training labels
-├── validation.csv  # Validation labels
-└── test.csv        # Test labels
-```
-
-### 5. Verify the Setup
-
-Check that the dataset is properly organized:
+## Train
 
 ```bash
-ls -lh data/
-ls data/train/ | head -5  # Show first 5 training images
+python main.py train
+# or: python -m src.train
 ```
 
-You should see the three directories and three CSV files.
+Trains for 30 epochs, saves checkpoints to `runs/run_YYYYMMDD_HHMMSS_checkpoints/`.
 
-## Training the Model
-
-### Start Training
-
-Navigate to the source directory and start training:
-
-```bash
-python ./src/train.py
-```
-
-### What Happens During Training
-
-1. The script detects if CUDA is available and uses GPU if present
-2. Loads training and validation data
-3. Trains the model for 30 epochs (configurable)
-4. Saves checkpoints after each epoch
-5. Tracks the best model based on validation CER (Character Error Rate)
-
-### Model Checkpoints
-
-Checkpoints are saved to `runs/run_YYYYMMDD_HHMMSS_checkpoints/`:
-- `epoch_X_model_checkpoint.pth`: Saved after each epoch
-- `best_model.pth`: Best performing model on validation set
-
-When testing or generating predictions, the scripts automatically load the most recent checkpoint directory unless you specify a different path.
-
-## Testing the Model
-
-After training completes, test the model:
+## Test
 
 ```bash
 python main.py test
-# or
-python ./src/test.py
+# or: python -m src.test
 ```
 
-This will:
-1. Load the best model checkpoint
-2. Evaluate on the test set
-3. Display metrics (CER, accuracy, etc.)
-4. Show sample predictions
+Evaluates on test set, shows CER and sample predictions.
 
-## Analyzing Model Predictions
-
-For detailed error analysis on random test samples:
+## Analyze
 
 ```bash
 python main.py analyze --num-samples 100
-# or
-python ./src/analyze.py
+# or: python src.analyze
 ```
 
-This provides:
-- Exact match rate
-- Character Error Rate (CER) and Word Error Rate (WER)
-- Character and word-level statistics
-- Examples of correct and incorrect predictions
-- Common error patterns
-- Detailed results saved to `prediction_analysis_results.txt`
+Detailed error analysis. Results saved to `runs/.../analyze/prediction_YYMMDD_HHMMSS_analyze_results.txt`.
 
-### Example Output
+Add `--all` flag to analyze entire test set instead of random samples.
 
-```
-PREDICTION ANALYSIS RESULTS
-======================================================================
-Total Samples Analyzed: 100
-
-ACCURACY METRICS
-Exact Match Rate:        85.00% (85/100)
-Character Error Rate:    5.12%
-Word Error Rate:         12.50%
-```
-
-## Generating Predictions from Individual Images
-
-To see predictions for specific test images:
+## Generate (single image)
 
 ```bash
 python main.py generate --index 0
-# or
-python ./src/generate.py --index 0
+# or: python -m src.generate --index 0
 ```
 
-### Example Output
-
-```
-Using device: cuda
-Using checkpoint: ./runs/run_20260106_224314_checkpoints/best_model.pth
-Model loaded successfully (Epoch 30)
-
-Generating text for image at index 0...
-
-Predicted text: Maria
-Ground truth:   Maria
-```
-
-### Advanced Usage
-
-```bash
-# Try different images
-python main.py generate --index 5
-python main.py generate --index 100
-
-# Use a specific checkpoint
-python main.py generate --index 10 --checkpoint ./runs/run_20260106_224314_checkpoints/epoch_20_model_checkpoint.pth
-```
+Predict text from specific test image by index.
 
 ## Configuration
 
-To modify training parameters, edit [src/core/config.py](src/core/config.py):
+Edit [src/core/config.py](src/core/config.py) to adjust:
+- `BATCH_SIZE` (default: 32)
+- `LEARNING_RATE` (default: 1e-4)
+- `EPOCHS` (default: 30)
+- `ACCUMULATION_STEPS` (default: 4)
+- `IMAGE_HEIGHT/WIDTH` (default: 64×256)
 
-```python
-# Common parameters to adjust:
-BATCH_SIZE = 32 # Reduce if GPU memory is limited
-LEARNING_RATE = 1e-4 # Learning rate
-EPOCHS = 30 # Number of training epochs
-ACCUMULATION_STEPS = 4 # Gradient accumulation (effective batch = 32 * 4 = 128)
-NUM_WORKERS = 4 # Data loading workers
-```
+## Commands Summary
+
+| Command | What it does |
+|---------|-------------|
+| `python main.py train` | Train model from scratch |
+| `python main.py test` | Test on test set |
+| `python main.py analyze` | Detailed error analysis |
+| `python main.py generate --index N` | Predict single image |
+
+All commands support `--checkpoint` to specify a model checkpoint.
+
+## Requirements
+
+- Python 3.8+
+- PyTorch + torchvision
+- NumPy, Pillow, pandas, python-Levenshtein, tqdm, matplotlib
+- (Optional) CUDA-enabled GPU for faster training
+
+For more details, see [README.md](README.md).
 
 ## Next Steps
 

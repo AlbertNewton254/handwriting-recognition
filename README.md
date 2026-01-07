@@ -1,282 +1,503 @@
 # Handwriting Recognition
 
-A deep learning project for handwriting recognition using a CRNN architecture with CTC loss. This model can recognize handwritten text from images using a combination of convolutional neural networks for feature extraction and bidirectional LSTMs for sequence modeling.
+A deep learning system for handwriting recognition using a CRNN (Convolutional Recurrent Neural Network) architecture with CTC (Connectionist Temporal Classification) loss. This model recognizes handwritten text from images using CNNs for feature extraction and bidirectional LSTMs for sequence modeling.
 
 ## Features
 
-- **CRNN Architecture**: Combines CNNs for visual feature extraction with bidirectional LSTMs for sequence modeling
-- **CTC Loss**: Uses Connectionist Temporal Classification for training without requiring character-level alignment
-- **PyTorch Implementation**: Built with PyTorch for flexibility and performance
-- **Kaggle Dataset**: Uses the Handwriting Recognition dataset from Kaggle
-- **Gradient Accumulation**: Supports gradient accumulation for training with larger effective batch sizes
-- **GPU Support**: Automatically detects and uses CUDA if available
+- **CRNN Architecture**: CNNs extract visual features, bidirectional LSTMs model sequential dependencies
+- **CTC Loss**: No character-level alignment required during training
+- **PyTorch Implementation**: Built with PyTorch 2.0+ with model compilation support
+- **Mixed Precision Training**: Automatic mixed precision (AMP) for faster training on modern GPUs
+- **Gradient Accumulation**: Effective batch sizes larger than GPU memory allows
+- **Comprehensive Analysis**: Detailed error analysis with metrics and visualizations
+- **Unified CLI**: Single entry point via `main.py` for all operations
+
+## Performance
+
+Based on the full test set analysis (41,370 samples):
+
+| Metric | Result |
+|--------|--------|
+| **Exact Match Rate** | 79.99% (33,091/41,370) |
+| **Character Error Rate (CER)** | 5.50% |
+| **Word Error Rate (WER)** | 21.00% |
+| **Total Characters** | 270,592 (GT) |
+| **Character Errors** | 14,893 |
+| **Avg Length Difference** | -0.05 characters |
+
+### Common Error Patterns
+
+The model occasionally confuses:
+- Similar-looking characters (e.g., 'I' vs 'l', 'O' vs '0')
+- Double letters (e.g., 'EMPTY' → 'EMTY')
+- Rare name spellings (e.g., 'LOVIS' → 'LOUIS')
+
+See analysis results in `runs/run_*/analyze/prediction_*_analyze_results.txt` for detailed per-sample predictions.
 
 ## Architecture
 
 The model consists of three main components:
 
-1. **CNN Feature Extractor**: Three convolutional blocks (Conv2D + ReLU + MaxPool2D) that extract visual features from input images
-2. **Bidirectional LSTM**: Two-layer bidirectional LSTM that models sequential dependencies in the features
-3. **Fully Connected Layer**: Maps LSTM outputs to character probabilities with log-softmax activation
+### 1. CNN Feature Extractor
+```
+Input (1×64×256)
+  → Conv2D(64) + ReLU + MaxPool2D(2×2)
+  → Conv2D(128) + ReLU + MaxPool2D(2×2)
+  → Conv2D(256) + ReLU + MaxPool2D(2×2)
+  → Features (256×8×32)
+```
 
-### Input/Output
+### 2. Bidirectional LSTM
+```
+Features reshaped to (batch, 32, 2048)
+  → 2-layer Bidirectional LSTM(256)
+  → Output (batch, 32, 512)
+```
 
-- **Input**: Grayscale images of size 64×256 pixels
-- **Output**: Character sequences from a set of 90+ characters (letters, numbers, punctuation)
+### 3. Fully Connected Classifier
+```
+LSTM output
+  → Linear(512 → num_classes)
+  → Log-Softmax
+  → CTC predictions
+```
+
+### Input/Output Specifications
+
+- **Input**: Grayscale images, size 64×256 pixels
+- **Output**: Character sequences from 91-character set (letters, numbers, punctuation, spaces)
+- **Character Set**: `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?'-\`"()[]{}<>@#$%^&*+=_/\\|~:;`
 
 ## Project Structure
 
 ```
 handwriting-recognition/
-├── data/                           # Dataset directory (created by setup)
+├── data/                           # Dataset directory (created by setup.sh)
 │   ├── train/                      # Training images
 │   ├── validation/                 # Validation images
 │   ├── test/                       # Test images
-│   ├── train.csv                   # Training labels
+│   ├── train.csv                   # Training labels (FILENAME, IDENTITY)
 │   ├── validation.csv              # Validation labels
 │   └── test.csv                    # Test labels
-├── runs/                          # Model checkpoints directory
-│   └── run_YYYYMMDD_HHMMSS_checkpoints/  # Timestamped checkpoint directories
-│       ├── best_model.pth         # Best model checkpoint
-│       ├── epoch_*.pth            # Epoch-specific checkpoints
-│       └── plots/                 # Training plots
+├── runs/                          # Training runs and checkpoints
+│   └── run_YYYYMMDD_HHMMSS_checkpoints/  # Timestamped run directories
+│       ├── best_model.pth         # Best model (lowest validation CER)
+│       ├── epoch_5_model_checkpoint.pth
+│       ├── epoch_10_model_checkpoint.pth
+│       ├── ...                    # Checkpoints every 5 epochs
+│       ├── analyze/               # Analysis results
+│       │   └── prediction_YYMMDD_HHMMSS_analyze_results.txt
+│       └── plots/                 # Training curves (loss, CER)
 ├── src/                            # Source code
 │   ├── core/                       # Core utilities
 │   │   ├── __init__.py
-│   │   ├── config.py              # Configuration parameters
-│   │   └── utils.py               # Training and testing utilities
-│   ├── data/                       # Data loading and processing
+│   │   ├── config.py              # Configuration (batch size, epochs, etc.)
+│   │   └── utils.py               # Training/evaluation utilities
+│   ├── data/                       # Data pipeline
 │   │   ├── __init__.py
-│   │   ├── handwriting_dataset.py # PyTorch Dataset implementation
-│   │   ├── handwriting_dataloader.py # DataLoader utilities
-│   │   ├── handwriting_transforms.py # Image transformations
-│   │   └── collate.py             # Custom collate function
+│   │   ├── handwriting_dataset.py # PyTorch Dataset
+│   │   ├── handwriting_dataloader.py # DataLoader factory
+│   │   ├── handwriting_transforms.py # Image preprocessing
+│   │   └── collate.py             # Batch collation for variable-length sequences
 │   ├── models/                     # Model architectures
 │   │   ├── __init__.py
 │   │   └── handwriting_recognition_model.py # CRNN model
 │   ├── train.py                   # Training script
 │   ├── test.py                    # Testing script
-│   ├── generate.py                # Text generation script
-│   └── analyze.py                 # Prediction analysis script
-├── main.py                         # Unified command-line interface
+│   ├── generate.py                # Single image prediction
+│   └── analyze.py                 # Comprehensive error analysis
+├── main.py                         # Unified CLI interface
 ├── setup.sh                        # Dataset setup script
 ├── README.md                       # This file
 ├── QUICKSTART.md                   # Quick start guide
 └── LICENSE                         # MIT License
 ```
 
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| [main.py](main.py) | Unified command-line interface for train/test/analyze/generate |
+| [src/core/config.py](src/core/config.py) | Central configuration (hyperparameters, paths) |
+| [src/models/handwriting_recognition_model.py](src/models/handwriting_recognition_model.py) | CRNN model definition |
+| [src/train.py](src/train.py) | Training loop with mixed precision and gradient accumulation |
+| [src/test.py](src/test.py) | Evaluation on test set |
+| [src/analyze.py](src/analyze.py) | Detailed error analysis with metrics |
+| [src/generate.py](src/generate.py) | Single image inference |
+
 ## Requirements
 
 - Python 3.8+
-- PyTorch
+- PyTorch 2.0+ (with optional CUDA support)
 - torchvision
 - NumPy
-- Pillow
+- Pillow (PIL)
 - pandas
 - python-Levenshtein
-- CUDA (optional, for GPU acceleration)
+- tqdm
+- matplotlib
+
+Install all dependencies:
+```bash
+pip install torch torchvision numpy pillow pandas python-Levenshtein tqdm matplotlib
+```
+
+For GPU acceleration (CUDA 11.8):
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+pip install numpy pillow pandas python-Levenshtein tqdm matplotlib
+```
 
 ## Installation
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed installation instructions.
+See [QUICKSTART.md](QUICKSTART.md) for fast setup, or follow these steps:
 
-## Quick Start
+1. **Clone the repository**:
+```bash
+git clone <your-repo-url>
+cd handwriting-recognition
+```
 
-1. **Run the setup script**:
+2. **Install dependencies** (see Requirements above)
+
+3. **Set up the dataset**:
 ```bash
 bash setup.sh
 ```
 
-2. **Train the model** (using main.py or train.py directly):
+This downloads and organizes the dataset into `data/train/`, `data/validation/`, `data/test/` with corresponding CSV label files.
+
+## Usage
+
+### Training
+
+Train a model from scratch:
+
 ```bash
 python main.py train
-# or
-python ./src/train.py
 ```
 
-3. **Test the model**:
+**Options:**
+- `--train-dir`: Training images directory (default: `./data/train/`)
+- `--train-labels`: Training labels CSV (default: `./data/train.csv`)
+- `--val-dir`: Validation images directory (default: `./data/validation/`)
+- `--val-labels`: Validation labels CSV (default: `./data/validation.csv`)
+- `--epochs`: Number of epochs (default: 30)
+- `--batch-size`: Batch size (default: 32)
+- `--learning-rate`: Learning rate (default: 1e-4)
+- `--accumulation-steps`: Gradient accumulation steps (default: 4, effective batch = 128)
+- `--num-workers`: Data loading workers (default: 4)
+
+**Training process:**
+1. Loads training and validation datasets
+2. Applies data augmentation (blur, rotation) to training set only
+3. Trains with mixed precision (FP16) for speed
+4. Validates after each epoch, calculates CER
+5. Saves checkpoints every 5 epochs
+6. Tracks best model based on validation CER
+7. Generates loss/CER plots
+
+**Output:**
+- Checkpoints: `runs/run_YYYYMMDD_HHMMSS_checkpoints/`
+- Best model: `best_model.pth`
+- Plots: `plots/training_loss.png`, `plots/validation_metrics.png`
+
+### Testing
+
+Evaluate the trained model on the test set:
+
 ```bash
 python main.py test
-# or
-python ./src/test.py
 ```
 
-4. **Analyze model predictions** (see detailed error analysis):
+**Options:**
+- `--checkpoint`: Path to checkpoint file (optional, auto-detects latest)
+- `--test-dir`: Test images directory (default: `./data/test/`)
+- `--test-labels`: Test labels CSV (default: `./data/test.csv`)
+- `--batch-size`: Batch size (default: 32)
+- `--num-workers`: Data loading workers (default: 4)
+
+**Output:**
+```
+Test Results (from Epoch 30):
+Test Loss: 0.0234
+Test CER: 5.50%
+```
+
+### Analyzing Predictions
+
+Perform comprehensive error analysis:
+
 ```bash
+# Analyze 100 random samples
 python main.py analyze --num-samples 100
-# or
-python ./src/analyze.py
+
+# Analyze entire test set
+python main.py analyze --all
 ```
 
-5. **Generate predictions from individual images**:
+**Options:**
+- `--checkpoint`: Path to checkpoint (optional, auto-detects latest)
+- `--num-samples`: Number of random samples to analyze (default: 100)
+- `--all`: Analyze entire test set instead of random samples
+- `--test-dir`: Test images directory
+- `--test-labels`: Test labels CSV
+
+**Generates:**
+- Console output with metrics and examples
+- Detailed file: `runs/.../analyze/prediction_YYMMDD_HHMMSS_analyze_results.txt`
+
+**Analysis includes:**
+```
+=== prediction_260107_175754 ===
+
+ACCURACY METRICS
+Exact Match Rate:        79.99% (33091/41370)
+Character Error Rate:    5.50%
+Word Error Rate:         21.00%
+
+CHARACTER-LEVEL STATISTICS
+Total Characters (GT):   270592
+Total Characters (Pred): 268360
+Character Errors:        14893
+Avg Length Difference:   -0.05 chars
+
+MOST COMMON ERROR PATTERNS
+15x: EMPTY... -> EMTY...
+12x: EMPTY... -> EMY...
+8x: HANON... -> MANON...
+
+DETAILED PREDICTION RESULTS
+Sample 1 OK (Edit Distance: 0)
+Ground Truth: KEVIN
+Prediction:   KEVIN
+...
+```
+
+### Generating Single Predictions
+
+Predict text from a specific test image:
+
 ```bash
 python main.py generate --index 0
-# or
-python ./src/generate.py --index 0
+```
+
+**Options:**
+- `--index`: Index of the image in test set (required)
+- `--checkpoint`: Path to checkpoint (optional, auto-detects latest)
+- `--test-dir`: Test images directory
+- `--test-labels`: Test labels CSV
+
+**Example output:**
+```
+Generation Results (from Epoch 30):
+Image index: 0
+Predicted text: Maria
+Ground truth:   Maria
 ```
 
 ## Configuration
 
-Key parameters can be modified in [src/core/config.py](src/core/config.py):
+Edit [src/core/config.py](src/core/config.py) to customize training:
 
-- `BATCH_SIZE`: Batch size for training (default: 32)
-- `LEARNING_RATE`: Learning rate for optimizer (default: 1e-4)
-- `EPOCHS`: Number of training epochs (default: 30)
-- `ACCUMULATION_STEPS`: Gradient accumulation steps (default: 4)
-- `IMAGE_HEIGHT`: Input image height (default: 64)
-- `IMAGE_WIDTH`: Input image width (default: 256)
-- `NUM_WORKERS`: Number of data loading workers (default: 4)
+```python
+# Data paths
+TRAIN_DIR = "./data/train/"
+VALIDATION_DIR = "./data/validation/"
+TEST_DIR = "./data/test/"
+TRAIN_LABELS_FILE = "./data/train.csv"
+VALIDATION_LABELS_FILE = "./data/validation.csv"
+TEST_LABELS_FILE = "./data/test.csv"
+
+# Character set (91 characters)
+CHARACTER_SET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?'-`\"()[]{}<>@#$%^&*+=_/\\|~:;"
+
+# Training hyperparameters
+ACCUMULATION_STEPS = 4      # Gradient accumulation (effective batch = BATCH_SIZE * 4)
+BATCH_SIZE = 32             # Batch size per GPU
+NUM_WORKERS = 4             # Data loading workers
+LEARNING_RATE = 1e-4        # AdamW learning rate
+EPOCHS = 30                 # Training epochs
+
+# Image dimensions
+IMAGE_HEIGHT = 64           # Input height
+IMAGE_WIDTH = 256           # Input width
+
+# Output paths (auto-generated with timestamp)
+MODEL_CHECKPOINTS_DIR = f"./runs/run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_checkpoints/"
+```
+
+### Adjusting for GPU Memory
+
+If you encounter out-of-memory errors:
+1. Reduce `BATCH_SIZE` (e.g., 16 or 8)
+2. Increase `ACCUMULATION_STEPS` to maintain effective batch size
+3. Reduce `NUM_WORKERS` to decrease RAM usage
+
+## Training Pipeline
+
+### Data Preprocessing
+
+1. **Image Loading**: Reads grayscale PNG images
+2. **Transformations** (training only):
+   - Random Gaussian blur (50% probability)
+   - Random rotation (±15 degrees)
+3. **Normalization**: Resizes to 64×256, converts to tensor
+4. **Label Encoding**: Converts text to character indices using `CHARACTER_SET`
+
+### Training Loop
+
+```
+For each epoch:
+  1. Train on training set
+     - Forward pass with mixed precision (FP16)
+     - CTC loss calculation
+     - Gradient accumulation over ACCUMULATION_STEPS batches
+     - Backward pass and optimizer step
+
+  2. Validate on validation set
+     - Forward pass without gradients
+     - Calculate validation loss and CER
+     - Update best model if CER improved
+
+  3. Save checkpoint every 5 epochs
+  4. Generate training plots
+```
+
+### Checkpoints
+
+- **`best_model.pth`**: Model with lowest validation CER
+- **`epoch_N_model_checkpoint.pth`**: Saved every 5 epochs
+
+Each checkpoint contains:
+```python
+{
+    'epoch': epoch_number,
+    'model_state_dict': model.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+    'train_loss': training_loss,
+    'val_loss': validation_loss,
+    'val_cer': validation_cer
+}
+```
+
+## Evaluation Metrics
+
+### Character Error Rate (CER)
+
+$$\text{CER} = \frac{\text{Levenshtein Distance}}{\text{Total Characters in Ground Truth}} \times 100\%$$
+
+Measures character-level accuracy. Lower is better. A CER of 5.5% means 94.5% of characters are correct.
+
+### Word Error Rate (WER)
+
+$$\text{WER} = \frac{\text{Word-Level Levenshtein Distance}}{\text{Total Words in Ground Truth}} \times 100\%$$
+
+Measures word-level accuracy. More strict than CER (one character error fails entire word).
+
+### Exact Match Rate
+
+Percentage of predictions that exactly match ground truth (case-sensitive).
 
 ## Dataset
 
-This project uses the [Handwriting Recognition dataset from Kaggle](https://www.kaggle.com/datasets/landlord/handwriting-recognition). The dataset contains handwritten text images with corresponding labels.
+Uses the [Handwriting Recognition dataset from Kaggle](https://www.kaggle.com/datasets/landlord/handwriting-recognition).
 
-**Note**: You need to download the dataset manually before running the setup script. See the Installation section for details.
+**Dataset statistics:**
+- **Training set**: ~50,000 images
+- **Validation set**: ~10,000 images
+- **Test set**: 41,370 images
+- **Image format**: Grayscale PNG
+- **Text content**: Names (first names, last names, full names)
+- **Labels**: CSV files with `FILENAME` and `IDENTITY` columns
 
-## Training
+The setup script (`setup.sh`) downloads and organizes the dataset automatically.
 
-The training process:
+## Advanced Usage
 
-1. Loads images and labels from the training directory
-2. Applies transformations (resizing, normalization)
-3. Uses CTC loss for sequence alignment
-4. Saves checkpoints periodically
-5. Validates on the validation set after each epoch
+### Using Specific Checkpoints
 
-Training logs will show:
-- Training loss per batch
-- Validation loss and Character Error Rate (CER) per epoch
-- Best model checkpoint
-
-## Testing
-
-The testing script:
-1. Loads the best model checkpoint
-2. Evaluates on the test set
-3. Reports Character Error Rate (CER) and other metrics
-4. Shows sample predictions
-
-## Analyzing Predictions
-
-The analysis command provides detailed error analysis on random test samples:
+All commands support `--checkpoint` to specify a model:
 
 ```bash
-python main.py analyze --num-samples 100
-# or
-python ./src/analyze.py
+# Test with specific checkpoint
+python main.py test --checkpoint ./runs/run_20260107_144221_checkpoints/epoch_20_model_checkpoint.pth
+
+# Analyze with specific checkpoint
+python main.py analyze --checkpoint ./runs/run_20260107_144221_checkpoints/best_model.pth --all
+
+# Generate with specific checkpoint
+python main.py generate --index 100 --checkpoint ./runs/run_20260107_144221_checkpoints/epoch_15_model_checkpoint.pth
 ```
 
-This will:
-1. Load the best model checkpoint (or use `--checkpoint` to specify a different one)
-2. Select random samples from the test dataset
-3. Generate predictions and compare with ground truth
-4. Calculate comprehensive metrics:
-   - Exact Match Rate
-   - Character Error Rate (CER)
-   - Word Error Rate (WER)
-   - Character-level and word-level statistics
-   - Common error patterns
-5. Display correct and incorrect prediction examples
-6. Save detailed results to `prediction_analysis_results.txt`
+### Custom Data Paths
 
-### Options
-
-- `--num-samples`, `-n`: Number of random samples to analyze (default: 100)
-- `--checkpoint`, `-c`: Path to a specific checkpoint file (optional, uses best model by default)
-- `--test-dir`: Directory containing test images (optional, uses default from config)
-- `--test-labels`: Path to test labels CSV file (optional, uses default from config)
-
-### Example Output
-
-```
-PREDICTION ANALYSIS RESULTS
-======================================================================
-
-Total Samples Analyzed: 100
-
-ACCURACY METRICS
-Exact Match Rate:        85.00% (85/100)
-Character Error Rate:    3.12%
-Word Error Rate:         12.50%
-
-CHARACTER-LEVEL STATISTICS
-Total Characters (GT):   850
-Total Characters (Pred): 845
-Character Errors:        27
-Avg Length Difference:   -0.05 chars
-
-MOST COMMON ERROR PATTERNS
-5x: MICHEL... -> MICHE...
-3x: SOPHIE... -> SOPIE...
-...
-```
-
-## Generating Predictions
-
-To generate text predictions from individual images:
+Override default paths:
 
 ```bash
-python main.py generate --index 0
-# or
-python ./src/generate.py --index 0
+# Train with custom paths
+python main.py train \
+  --train-dir ./custom_data/train/ \
+  --train-labels ./custom_data/train.csv \
+  --val-dir ./custom_data/val/ \
+  --val-labels ./custom_data/val.csv
+
+# Test with custom paths
+python main.py test \
+  --test-dir ./custom_data/test/ \
+  --test-labels ./custom_data/test.csv
 ```
 
-This will:
-1. Load the best model checkpoint (or use `--checkpoint` to specify a different one)
-2. Load the image at the specified index from the test dataset
-3. Generate and display the predicted text
-4. Show the ground truth for comparison
+## Troubleshooting
 
-### Options
+### CUDA Out of Memory
 
-- `--index`, `-i`: Index of the image in the test dataset (required)
-- `--checkpoint`, `-c`: Path to a specific checkpoint file (optional, uses best model by default)
-- `--test-dir`: Directory containing test images (optional, uses default from config)
-- `--test-labels`: Path to test labels CSV file (optional, uses default from config)
-
-### Example
-
-```bash
-# Generate prediction for image at index 42
-python main.py generate --index 42
-
-# Use a specific checkpoint
-python main.py generate --index 10 --checkpoint ./runs/run_20260106_224314_checkpoints/epoch_25_model_checkpoint.pth
+Reduce batch size or increase gradient accumulation:
+```python
+# In config.py
+BATCH_SIZE = 16          # Reduced from 32
+ACCUMULATION_STEPS = 8   # Increased from 4
 ```
 
-## Model Checkpoints
+### Slow Data Loading
 
-Model checkpoints are saved in timestamped directories under `runs/`:
-- `runs/run_YYYYMMDD_HHMMSS_checkpoints/epoch_X_model_checkpoint.pth`: Checkpoint after epoch X
-- `runs/run_YYYYMMDD_HHMMSS_checkpoints/best_model.pth`: Best model based on validation CER
+Increase workers or enable persistent workers:
+```python
+# In config.py
+NUM_WORKERS = 8  # Increase if you have many CPU cores
+```
 
-When running test or generate commands without specifying a checkpoint, the script automatically loads the most recent run directory.
+### Poor Performance
 
-## Performance
-
-Model performance depends on:
-- Training data quality and quantity
-- Hyperparameter tuning
-- Training duration
-- Hardware (GPU vs CPU)
-
-Expected metrics after training:
-- Character Error Rate (CER): Varies depending on dataset and training
+- Train for more epochs
+- Reduce learning rate for fine-tuning
+- Add more data augmentation
+- Check for data quality issues
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Author
-
-Miguel Mochizuki Silva
-
 ## Acknowledgments
 
-- Dataset: [Handwriting Recognition dataset on Kaggle](https://www.kaggle.com/datasets/landlord/handwriting-recognition)
-- Framework: PyTorch
-- Architecture inspiration: CRNN (Convolutional Recurrent Neural Network)
+- **Dataset**: [Handwriting Recognition dataset on Kaggle](https://www.kaggle.com/datasets/landlord/handwriting-recognition)
+- **Framework**: PyTorch 2.0+
+- **Architecture**: CRNN (Convolutional Recurrent Neural Network) with CTC loss
+- **Metrics**: Levenshtein distance (python-Levenshtein)
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Citation
+
+If you use this project in your research or work, please cite:
+
+```bibtex
+@software{handwriting_recognition_2026,
+  author = {Miguel Mochizuki Silva},
+  title = {Handwriting Recognition with CRNN},
+  year = {2026},
+  url = {https://github.com/AlbertNewton254/handwriting-recognition}
+}
+```
