@@ -10,7 +10,8 @@ from src.core.config import (
     TEST_DIR, TEST_LABELS_FILE,
     EPOCHS, BATCH_SIZE, LEARNING_RATE, ACCUMULATION_STEPS, NUM_WORKERS
 )
-from src.core.utils import find_latest_checkpoint, get_device
+from src.core.utils import get_device
+from src.core.checkpoints import find_latest_checkpoint
 from src.train import train_model
 from src.test import test_model
 from src.generate import generate_from_model

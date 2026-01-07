@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import argparse
 from src.core.config import *
-from src.core.utils import evaluate, find_latest_checkpoint, load_model_checkpoint
+from src.core.utils import evaluate
+from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
 from src.data.handwriting_dataloader import get_handwriting_dataloader
 from src.models.handwriting_recognition_model import HandwritingRecognitionModel
 

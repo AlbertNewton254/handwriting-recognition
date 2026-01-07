@@ -5,7 +5,8 @@ generate.py
 import torch
 import argparse
 from src.core.config import TEST_DIR, TEST_LABELS_FILE, CHARACTER_SET
-from src.core.utils import decode_predictions, find_latest_checkpoint, load_model_checkpoint, decode_ground_truth
+from src.core.utils import decode_predictions, decode_ground_truth
+from src.core.checkpoints import find_latest_checkpoint, load_model_checkpoint
 from src.models.handwriting_recognition_model import HandwritingRecognitionModel
 from src.data.handwriting_dataloader import get_handwriting_dataloader
 
