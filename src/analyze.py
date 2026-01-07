@@ -3,6 +3,7 @@ Analyze model predictions on random test samples
 Provides detailed metrics and error analysis
 """
 
+import os
 import torch
 import random
 from collections import defaultdict
@@ -172,8 +173,12 @@ def analyze_predictions(num_samples=100, device=None, checkpoint=None, test_dir=
         for pattern, count in sorted_errors[:5]:
             print(f"{count}x: {pattern}")
 
-    # Save detailed results
-    output_file = "prediction_analysis_results.txt"
+    # Save detailed results in checkpoint directory
+    checkpoint_dir = os.path.dirname(checkpoint_path)
+    analyze_dir = os.path.join(checkpoint_dir, "analyze")
+    os.makedirs(analyze_dir, exist_ok=True)
+    
+    output_file = os.path.join(analyze_dir, "prediction_analysis_results.txt")
     with open(output_file, 'w') as f:
         f.write("DETAILED PREDICTION RESULTS\n")
         f.write("=" * 70 + "\n\n")
