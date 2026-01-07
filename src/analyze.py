@@ -17,7 +17,14 @@ from src.data.handwriting_transforms import HandwritingTransform
 
 
 def calculate_metrics(predictions, ground_truths):
-    """Calculate comprehensive metrics"""
+    """
+    Calculate comprehensive metrics for predictions vs ground truths
+
+    predictions: List of predicted text strings
+    ground_truths: List of ground truth text strings
+
+    metrics: Dictionary containing all calculated metrics
+    """
     metrics = {
         'total_samples': len(predictions),
         'exact_matches': 0,
@@ -80,6 +87,8 @@ def analyze_predictions(test_dir, test_labels, checkpoint_path, num_samples=100,
     num_samples: Number of random samples to analyze (ignored if use_all=True)
     use_all: If True, analyze entire dataset instead of random samples
     device: Device to test on ('cuda' or 'cpu')
+
+    None: Results are printed and saved to file
     """
     # Configuration
     print(f"Using device: {device}")
