@@ -56,7 +56,8 @@ handwriting-recognition/
 │   │   └── handwriting_recognition_model.py # CRNN model
 │   ├── train.py                   # Training script
 │   ├── test.py                    # Testing script
-│   └── generate.py                # Text generation script
+│   ├── generate.py                # Text generation script
+│   └── analyze.py                 # Prediction analysis script
 ├── main.py                         # Unified command-line interface
 ├── setup.sh                        # Dataset setup script
 ├── README.md                       # This file
@@ -72,6 +73,7 @@ handwriting-recognition/
 - NumPy
 - Pillow
 - pandas
+- python-Levenshtein
 - CUDA (optional, for GPU acceleration)
 
 ## Installation
@@ -99,7 +101,14 @@ python main.py test
 python ./src/test.py
 ```
 
-4. **Generate predictions from individual images**:
+4. **Analyze model predictions** (see detailed error analysis):
+```bash
+python main.py analyze --num-samples 100
+# or
+python ./src/analyze.py
+```
+
+5. **Generate predictions from individual images**:
 ```bash
 python main.py generate --index 0
 # or
@@ -146,6 +155,61 @@ The testing script:
 2. Evaluates on the test set
 3. Reports Character Error Rate (CER) and other metrics
 4. Shows sample predictions
+
+## Analyzing Predictions
+
+The analysis command provides detailed error analysis on random test samples:
+
+```bash
+python main.py analyze --num-samples 100
+# or
+python ./src/analyze.py
+```
+
+This will:
+1. Load the best model checkpoint (or use `--checkpoint` to specify a different one)
+2. Select random samples from the test dataset
+3. Generate predictions and compare with ground truth
+4. Calculate comprehensive metrics:
+   - Exact Match Rate
+   - Character Error Rate (CER)
+   - Word Error Rate (WER)
+   - Character-level and word-level statistics
+   - Common error patterns
+5. Display correct and incorrect prediction examples
+6. Save detailed results to `prediction_analysis_results.txt`
+
+### Options
+
+- `--num-samples`, `-n`: Number of random samples to analyze (default: 100)
+- `--checkpoint`, `-c`: Path to a specific checkpoint file (optional, uses best model by default)
+- `--test-dir`: Directory containing test images (optional, uses default from config)
+- `--test-labels`: Path to test labels CSV file (optional, uses default from config)
+
+### Example Output
+
+```
+PREDICTION ANALYSIS RESULTS
+======================================================================
+
+Total Samples Analyzed: 100
+
+ACCURACY METRICS
+Exact Match Rate:        85.00% (85/100)
+Character Error Rate:    3.12%
+Word Error Rate:         12.50%
+
+CHARACTER-LEVEL STATISTICS
+Total Characters (GT):   850
+Total Characters (Pred): 845
+Character Errors:        27
+Avg Length Difference:   -0.05 chars
+
+MOST COMMON ERROR PATTERNS
+5x: MICHEL... -> MICHE...
+3x: SOPHIE... -> SOPIE...
+...
+```
 
 ## Generating Predictions
 
