@@ -99,15 +99,19 @@ python ./src/train.py
 
 ### Model Checkpoints
 
-Checkpoints are saved to `model/run_YYYYMMDD_HHMMSS_checkpoints/`:
+Checkpoints are saved to `runs/run_YYYYMMDD_HHMMSS_checkpoints/`:
 - `epoch_X_model_checkpoint.pth`: Saved after each epoch
 - `best_model.pth`: Best performing model on validation set
+
+When testing or generating predictions, the scripts automatically load the most recent checkpoint directory unless you specify a different path.
 
 ## Testing the Model
 
 After training completes, test the model:
 
 ```bash
+python main.py test
+# or
 python ./src/test.py
 ```
 
@@ -122,6 +126,8 @@ This will:
 To see predictions for specific test images:
 
 ```bash
+python main.py generate --index 0
+# or
 python ./src/generate.py --index 0
 ```
 
@@ -129,7 +135,7 @@ python ./src/generate.py --index 0
 
 ```
 Using device: cuda
-Using checkpoint: ./model/run_20260106_024556_checkpoints/best_model.pth
+Using checkpoint: ./runs/run_20260106_224314_checkpoints/best_model.pth
 Model loaded successfully (Epoch 30)
 
 Generating text for image at index 0...
@@ -142,11 +148,11 @@ Ground truth:   Maria
 
 ```bash
 # Try different images
-python ./src/generate.py --index 5
-python ./src/generate.py --index 100
+python main.py generate --index 5
+python main.py generate --index 100
 
 # Use a specific checkpoint
-python ./src/generate.py --index 10 --checkpoint ./model/run_20260106_024556_checkpoints/epoch_20_model_checkpoint.pth
+python main.py generate --index 10 --checkpoint ./runs/run_20260106_224314_checkpoints/epoch_20_model_checkpoint.pth
 ```
 
 ## Configuration
